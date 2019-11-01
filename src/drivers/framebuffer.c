@@ -5,9 +5,9 @@ static char *fb = (char *) FB_ADDR;
 // position of the next available location to print a character
 static fb_pos_t pos = {.row = 0, .col = 0};
 
-void fb_write(char *buf, unsigned int len) {
+void fb_write(char *buf) {
     unsigned int i = 0;
-    while (len > 0) {
+    while (buf[i] != NULL) {
 
         if (buf[i] == '\n') {
             pos.row++;
@@ -26,7 +26,6 @@ void fb_write(char *buf, unsigned int len) {
             fb_scroll_screen();
         }
 
-        len--;
         i++;
     }
 

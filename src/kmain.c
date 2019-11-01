@@ -2,7 +2,7 @@
 #include "print.h"
 #include "gdt.h"
 #include "interrupts.h"
-#include "memory.h"
+#include "kheap.h"
 
 #include "multiboot.h"
 
@@ -17,24 +17,18 @@ void kmain(multiboot_info_t* mbt, unsigned int magic) {
     print_init();
     // necessary to setup and enable interrupts
     interrupts_init();
-
+    // kernel heap needs to be setup before using kmalloc
     kheap_init();
 
     uint32_t *test1 = kmalloc(4 * sizeof(uint32_t));
     uint32_t *test2 = kmalloc(sizeof(uint32_t));
     uint8_t *test3 = kmalloc(sizeof(uint8_t));
 
-    kfree(test2);
-    print_kmem_blocks();
-    print_nl();
-    kfree(test1);
-    print_kmem_blocks();
-    kfree(test3);
-    print_kmem_blocks();
-    print_nl();
+    //print_kmem_blocks();
 
-    // //find what physical memory is free
-    // init_free_memory(mbt);    
+    //find what physical memory is free
+    init_free_memory(mbt);
+    print_free_memory();
 
     while (1);
 }

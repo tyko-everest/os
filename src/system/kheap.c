@@ -1,17 +1,16 @@
-#include "memory.h"
+#include "kheap.h"
 
 // used to get address of where the fixed kernel heap starts in memory
 // this "function" is just a label to where the heap starts in assembly
 void kernel_heap(void);
 // TODO: have these constants share references with same asm constants
 // TODO: not a fixed size heap for kernel
-uint32_t kernel_heap_size = 4096;
+uint32_t kernel_heap_size = KHEAP_SIZE;
 kernel_heap_segment_meta_t *kernel_heap_first_segment = NULL;
-
-
 
 void kheap_init() {
     // setup the start of the heap as a segment meta for the whole space
+    // starts as a single block of all space marked free
     ((kernel_heap_segment_meta_t*) kernel_heap)->size =
             kernel_heap_size - sizeof(kernel_heap_segment_meta_t);
     ((kernel_heap_segment_meta_t*) kernel_heap)->free = true;
@@ -22,12 +21,17 @@ void kheap_init() {
 }
 
 void *kmalloc(uint32_t bytes) {
+    // handle the case where no memory is requested
+    // just return NULL, this is a useless thing to ask for
+    if (bytes == 0) {
+        return NULL;
+    }
+
     // round the size up to the nearest 4 bytes
     // this will ensure alignment of all 32 bit data types
     if (bytes % sizeof(uint32_t) != 0) {
         bytes = bytes / sizeof(uint32_t) * sizeof(uint32_t) + sizeof(uint32_t);
     }
-
     // iterate through all the segments and end when there is none left
     // and we have not found a suitable block
     kernel_heap_segment_meta_t *curr_seg = kernel_heap_first_segment;
@@ -67,26 +71,37 @@ void *kmalloc(uint32_t bytes) {
     }
     // if we made it all the way out here that means we never found
     // a suitable segment
-    return (void*) NULL;
+    return NULL;
 }
 
 // TODO: add merging with previous blocks as well
 void kfree(void *pointer) {
+    if (pointer == NULL) {
+        return;
+    }
     kernel_heap_segment_meta_t *curr_seg = kernel_heap_first_segment;
+    kernel_heap_segment_meta_t *prev_seg = NULL;
     while (curr_seg != NULL) {
         // curr_seg plus size is the address in bytes after meta data
-        // + 1 with pointers adds the size of the pointer in bytes
+        // + 1 with pointers adds the size of the pointer type in bytes
         // if these match we have found our block
         if ((uint8_t*) (curr_seg + 1) == (uint8_t*) pointer) {
             curr_seg->free = true;
             // see if we can merge with the next block
-            if (curr_seg->next->free == true) {
+            if (curr_seg->next != NULL && curr_seg->next->free == true) {
                 curr_seg->size += curr_seg->next->size
                         + sizeof(kernel_heap_segment_meta_t);
                 curr_seg->next = curr_seg->next->next;
             }
+            // see if we can merge with previous block
+            if (prev_seg != NULL && prev_seg->free == true) {
+                prev_seg->size += curr_seg->size +
+                        sizeof(kernel_heap_segment_meta_t);
+                prev_seg->next = curr_seg->next;
+            }
             return;
         } else {
+            prev_seg = curr_seg;
             curr_seg = curr_seg->next;
         }
     }
@@ -98,22 +113,8 @@ void print_kmem_blocks(void) {
     while (curr_seg != NULL) {
         print_uint(curr_seg->size);
         print_uint(curr_seg->free);
-        print("\n", 1, IO_OUTPUT_FB);
+        print("\n", IO_OUTPUT_FB);
         curr_seg = curr_seg->next;
     }
 }
 #endif
-
-void init_free_memory(multiboot_info_t *mbt) {
-    
-    // need offsets because we are in the higher half
-    memory_map_t* mmap = (memory_map_t*) (mbt->mmap_addr + 0xC0000000);
-    while((uint32_t) mmap < mbt->mmap_addr + mbt->mmap_length + 0xC0000000) {
-        print_uint(mmap->base_addr_low);
-        print_uint(mmap->length_low);
-        print_uint(mmap->type);
-        print("\n", 1, IO_OUTPUT_FB);
-        mmap = (memory_map_t*) ((unsigned int)mmap
-                + mmap->size + sizeof(mmap->size));
-    }
-}

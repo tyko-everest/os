@@ -5,23 +5,23 @@ void print_init() {
     serial_init(SERIAL_COM1_BASE);
 }
 
-int print(char* buf, unsigned int len, io_output_mode_t mode) {
+int print(char* buf, io_output_mode_t mode) {
     if (mode == IO_OUTPUT_FB) {
-        fb_write(buf, len);
+        fb_write(buf);
         return 0;
     } else if (mode == IO_OUTPUT_SERIAL) {
-        serial_write(buf, len);
+        serial_write(buf);
         return 0;
     } else {
         return 1;
     }
 }
 void print_nl(void) {
-    print("\n", 1, IO_OUTPUT_FB);
+    print("\n", IO_OUTPUT_FB);
 }
 
 void print_uint(unsigned int num) {
-    fb_write("0x", 2);
+    fb_write("0x");
     for (int i = 7; i >= 0; i--) {
         char hex_digit = (char) (((num >> (4 * i)) & 0xF ) + 0x30U);
         switch (hex_digit) {
@@ -46,7 +46,11 @@ void print_uint(unsigned int num) {
         default:
             break;
         }
-        fb_write(&hex_digit, 1);
+        // need to make a null terminated string before printing
+        char hex_string[2];
+        hex_string[0] = hex_digit;
+        hex_string[1] = NULL;
+        fb_write(&hex_string);
     }
-    fb_write("\n", 1);
+    fb_write("\n");
 }

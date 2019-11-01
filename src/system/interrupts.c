@@ -72,18 +72,17 @@ void interrupts_init() {
 void interrupt_handler(stack_state_t stack, unsigned int interrupt, cpu_state_t cpu) {
     char val = 0;
 
-    print_uint(interrupt);
-
     switch (interrupt) {
         case INT_PIC1_KEYBOARD:
             val = get_key();
             if (val) {
-                print(&val, 1, IO_OUTPUT_FB);
+                print(&val, IO_OUTPUT_FB);
             }
             pic_acknowledge(interrupt);
             break;
 
         default:
+            print_uint(interrupt);
             magic_bp();
             break;
     }

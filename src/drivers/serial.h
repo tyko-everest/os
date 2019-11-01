@@ -2,6 +2,7 @@
 #define INCLUDE_SERIAL_H
 
 #include "port.h"
+#include "stddef.h"
 
 /* Base address of the serial ports */
 #define SERIAL_COM1_BASE                0x3F8
@@ -75,6 +76,6 @@ void serial_init(unsigned short com);
  * @param buf The string to be written
  * @param len The length of the string
  */
-void serial_write(char* buf, unsigned int len);
+void serial_write(char* buf);
 
 #endif /* INCLUDE_SERIAL_H */

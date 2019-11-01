@@ -17,7 +17,8 @@ C_FILES := kmain.c \
 	utils/print.c \
 	system/gdt.c \
 	system/interrupts.c \
-	system/memory.c
+	system/kheap.c \
+	system/page_frame.c
 C_SRCS := $(addprefix $(SRC_DIR)/, $(C_FILES))
 C_OBJS := $(addprefix $(BUILD_DIR)/, $(C_FILES))
 C_OBJS := $(C_OBJS:.c=.o)

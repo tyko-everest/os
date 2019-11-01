@@ -105,7 +105,7 @@ typedef struct module
  unsigned long reserved;
 } module_t;
 
-// defines for the type
+// defines for the memory map type
 #define MULTIBOOT_MEMORY_AVAILABLE              1
 #define MULTIBOOT_MEMORY_RESERVED               2
 #define MULTIBOOT_MEMORY_ACPI_RECLAIMABLE       3

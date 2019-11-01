@@ -2,6 +2,7 @@
 #define INCLUDE_FRAMEBUFFER_H
 
 #include "port.h"
+#include "stddef.h"
 
 #define FB_BLACK            0
 #define FB_BLUE             1   
@@ -42,9 +43,8 @@ typedef struct {
 /** Used to write to the framebuffer in a continuous stream
  * 
  * @param buf The string to be displayed
- * @param len The length of the string
  */
-void fb_write(char *buf, unsigned int len);
+void fb_write(char *buf);
 
 /** fb_init
  * Called before using framebuffer, clear the screen currently

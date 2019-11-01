@@ -11,7 +11,7 @@ typedef enum {
 
 void print_init(void);
 
-int print(char* buf, unsigned int len, io_output_mode_t mode);
+int print(char* buf, io_output_mode_t mode);
 void print_nl(void);
 void print_uint(unsigned int num);
 
