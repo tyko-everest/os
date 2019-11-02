@@ -109,6 +109,35 @@ void init_free_memory(multiboot_info_t *mbt) {
     }
 }
 
+// returns the physical address of an available page
+void* get_free_page(void) {
+    // check if we have any free memory left
+    if (first_free_segment != NULL) {
+        first_free_segment->addr += PAGE_SIZE;
+        first_free_segment->size -= PAGE_SIZE;
+
+        // check if we have killed off an entire free segment
+        if (first_free_segment->size == 0) {
+            // save the current list pointer, as it will change below
+            free_mem_segment_t *temp = first_free_segment;
+            // removing first segment, so cleanup the pointer of next segment
+            if (first_free_segment->next != NULL) {
+                first_free_segment = first_free_segment->next;
+                first_free_segment->prev = NULL;
+            // last node, set list pointer to NULL
+            } else {
+                first_free_segment = NULL;
+            }
+            // free the struct of the removed segment
+            kfree(temp);            
+        }
+    // no memory left, throw an error
+    } else {
+        print("ERROR: no free pages", IO_OUTPUT_SERIAL);
+        while(1);
+    }
+}
+
 #ifdef DEBUG
 void print_free_memory(void) {
     free_mem_segment_t *curr_seg = first_free_segment;
