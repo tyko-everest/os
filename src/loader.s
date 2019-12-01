@@ -49,6 +49,9 @@ enable_paging:
     ; tell CPU the first entry has changed
     invlpg [0]
 
+    ; push the base address of the stack onto the stack
+    ; needed to setup the tss for interrupts
+    push esp
     ; push the multiboot structures onto the stack
     push ecx
     push ebx
@@ -56,6 +59,7 @@ enable_paging:
 .loop:
     jmp .loop       ; loop forever
 
+; used for debugging
 global magic_bp
 magic_bp:
     xchg bx, bx

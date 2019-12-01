@@ -1,4 +1,5 @@
 global load_gdt
+global load_tss
 global load_segment_registers
 
 extern gdt
@@ -11,6 +12,12 @@ section .text
 load_gdt:
     lgdt [esp + 4]  ; load the gdt at the given address
     ret
+
+; load_tss - load a tss struct into cpu
+; stack: [esp] + 4] the tss struct
+load_tss:
+    mov ax, 0x28
+    ltr ax
 
 ; load_segment_registers - load the segment registers with the correct
 ; values from the gdt

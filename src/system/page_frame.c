@@ -5,7 +5,7 @@ free_mem_segment_t *first_free_segment = NULL;
 void init_free_memory(multiboot_info_t *mbt) {
 
     // allocate space for a temporary first free segment struct
-    // needdc to get a linked list going for the free segment list
+    // needed to get a linked list going for the free segment list
     free_mem_segment_t *temp_first_seg = kmalloc(sizeof(free_mem_segment_t));
     if (temp_first_seg == NULL) {
         print("ERROR: cannot allocate memory\n", IO_OUTPUT_SERIAL);
