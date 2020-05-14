@@ -2,10 +2,10 @@ CC := gcc
 C_INC :=  -Isrc/drivers -Isrc/asm -Isrc/utils -Isrc/system -Isrc/clib
 CFLAGS := $(C_INC) \
 		 -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
-		 -nostartfiles -nodefaultlibs -Wall -Wextra -c -DDEBUG
+		 -nostartfiles -nodefaultlibs -Wall -Wextra -c -DDEBUG -g
 LDFLAGS := -T link.ld -melf_i386
 AS := nasm
-ASFLAGS := -f elf
+ASFLAGS := -f elf -F dwarf -g
 
 SRC_DIR := ./src/
 BUILD_DIR := ./build/
@@ -14,6 +14,7 @@ C_FILES := kmain.c \
 	drivers/framebuffer.c \
 	drivers/serial.c \
 	drivers/keyboard.c \
+	drivers/ata.c \
 	utils/print.c \
 	system/gdt.c \
 	system/interrupts.c \

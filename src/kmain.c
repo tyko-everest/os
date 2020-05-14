@@ -3,6 +3,7 @@
 #include "gdt.h"
 #include "interrupts.h"
 #include "kheap.h"
+#include "ata.h"
 
 #include "multiboot.h"
 
@@ -24,9 +25,14 @@ void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     // find what physical memory is free
     init_free_memory(mbt);
 
-    print_uint(sizeof(tss_t)/sizeof(uint32_t));
 
-    magic_bp();
+    static uint32_t buffer[128];
+    for (int i = 0; i < 128; i++) {
+        buffer[i] = 0;
+    }
+    ata_pio_read(ATA0, ATA_MASTER, 0, 1, buffer);
+
+    print_uint(*(uint32_t*)buffer);
 
     while (1);
 }

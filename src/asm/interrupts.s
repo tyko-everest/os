@@ -28,7 +28,7 @@ common_interrupt_handler:
     popa
     
     ; add 8 due to error code and interrupt num pushed earlier
-    ; stack must be exactly how it was qhwn it entered the ISR
+    ; stack must be exactly how it was when it entered the ISR
     add esp, 8
 
     ; re-enable iterrupts

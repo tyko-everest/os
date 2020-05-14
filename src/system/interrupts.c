@@ -54,7 +54,7 @@ void interrupts_init() {
     register_idt_entry(29, (unsigned int) interrupt_handler_29);
     register_idt_entry(30, (unsigned int) interrupt_handler_30);
     register_idt_entry(31, (unsigned int) interrupt_handler_31);
-    // PIC1, the keyboard
+    // PIC1
     register_idt_entry(INT_PIC1_TIMER, (unsigned int) interrupt_handler_32);
     register_idt_entry(INT_PIC1_KEYBOARD, (unsigned int) interrupt_handler_33);
 
@@ -128,6 +128,7 @@ void pic_acknowledge(unsigned int interrupt) {
     if (interrupt < PIC2_START_INTERRUPT) {
         outb(PIC1_COMMAND_PORT, PIC_ACK);
     } else {
+        // might 
         outb(PIC2_COMMAND_PORT, PIC_ACK);
     }
 }
