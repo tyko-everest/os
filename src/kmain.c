@@ -4,12 +4,15 @@
 #include "interrupts.h"
 #include "kheap.h"
 #include "ata.h"
+#include "page_frame.h"
 
 #include "multiboot.h"
 
 void delay() {
     for (int i = 0; i < 1000000; i++);
 }
+
+void kernel_page_directory(void);
 
 void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     // setup flat memory model for kernel and user code
@@ -25,14 +28,15 @@ void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     // find what physical memory is free
     init_free_memory(mbt);
 
+    print_free_memory();
+    print_uint(get_free_page());
+    
 
     static uint32_t buffer[128];
     for (int i = 0; i < 128; i++) {
         buffer[i] = 0;
     }
-    ata_pio_read(ATA0, ATA_MASTER, 0, 1, buffer);
-
-    print_uint(*(uint32_t*)buffer);
+    //ata_pio_read(ATA0, ATA_MASTER, 0, 1, buffer);
 
     while (1);
 }

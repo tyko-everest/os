@@ -34,6 +34,7 @@ enable_paging:
     or eax, 0x00000010
     mov cr4, eax
     ; load kernel page directory
+    ; needs to be the physical address
     mov eax, (kernel_page_directory - KERNEL_VIRTUAL_BASE)
     mov cr3, eax
     ; enable paging and protection bit
@@ -74,31 +75,41 @@ PAGE_DIRECTORY_SIZE equ 4096
 KERNEL_VIRTUAL_BASE equ 0xC0000000
 ; the entry number is the 10 msbs of the address
 KERNEL_VIRTUAL_PAGE_NUMBER equ (KERNEL_VIRTUAL_BASE >> 22)
+; bits 31 - 12: physical address of page table (not the page itself)
 ; flags (only what we care about)
-; bit 7: 1 for 4 MiB pages
+; bit 7: 1 for 4 MiB page, ie. no pt for further breakdown
+; bit 5: 1 to disable caching
 ; bit 2: 0 for kernel access only
 ; bit 1: 1 for read/write
 ; bit 0: 1 for present
-KERNEL_PDE_ENTRY_FLAGS equ 0x00000083
+; kernel and grub start at 0
+KERNEL_PDE_FLAGS equ    0x00000083
+PD_PDE_FLAGS equ        0x00000013
 
 section .data
 align 4096  ; page directories must be 4 KiB aligned
+global kernel_page_directory
 kernel_page_directory:
     ; identity map the kernel, grub, bios, etc.
-    dd KERNEL_PDE_ENTRY_FLAGS
+    ; needed for setting up paging and zeroed out after
+    ; they are at 0, so no need to combine addr with flags
+    dd KERNEL_PDE_FLAGS
     ; fill in the entries between with 0
     times (KERNEL_VIRTUAL_PAGE_NUMBER - 1) dd 0;
     ; map as well at 3 GiB
-    dd KERNEL_PDE_ENTRY_FLAGS;
-    ; fill in the remainder with 0
-    times (1024 - KERNEL_VIRTUAL_PAGE_NUMBER - 1) dd 0;
+    dd KERNEL_PDE_FLAGS;
+    ; fill in the entries between with 0
+    times (1024 - KERNEL_VIRTUAL_PAGE_NUMBER - 2) dd 0;
+    ; map the last pde to the pd itself, so we can convert virt to phys addrs
+    ; this is not stored at address 0 so need to add physical addr to flags
+    dd (PD_PDE_FLAGS + kernel_page_directory - KERNEL_VIRTUAL_BASE)
 
 KERNEL_HEAP_SIZE equ 4096
 KERNEL_STACK_SIZE equ 4096  ; in bytes
 
 section .bss
-global kernel_heap
 align 4096
+global kernel_heap
 kernel_heap:
     resb KERNEL_HEAP_SIZE
 

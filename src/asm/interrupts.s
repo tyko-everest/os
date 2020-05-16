@@ -21,11 +21,11 @@ extern interrupt_handler
 common_interrupt_handler:
 
     ;save the registers
-    pusha
+    pushad
     ; call c function to handle the rest
     call interrupt_handler
     ; restore the registers
-    popa
+    popad
     
     ; add 8 due to error code and interrupt num pushed earlier
     ; stack must be exactly how it was when it entered the ISR
@@ -75,6 +75,15 @@ no_error_code_interrupt_handler 31
 no_error_code_interrupt_handler 32
 ; keyboard
 no_error_code_interrupt_handler 33
+
+extern pic1_keyboard_handler
+global pic1_keyboard_handler_entry
+pic1_keyboard_handler_entry:
+    pushad
+    call pic1_keyboard_handler
+    popad
+    sti
+    ret
 
 global load_idt
 ; load_idt - Loads the interrupt descriptor table (IDT).

@@ -1,23 +1,26 @@
 #include "interrupts.h"
-#include "keyboard.h"
-#include "print.h"
 
-static idt_entry_t idt_table[NUM_INTERRUPTS];
-static idt_header_t idt = {sizeof(idt_table) - 1, (unsigned int) idt_table};
+
+static idt_entry_t idt[NUM_INTERRUPTS];
+static idt_header_t idt_info;
 
 void register_idt_entry(unsigned int interrupt, unsigned int isr_addr) {
     if (interrupt >= NUM_INTERRUPTS) {
         return;
     }
-    idt_table[interrupt].offset_high = (unsigned short) ((isr_addr >> 16) & 0xFFFF);
-    idt_table[interrupt].offset_low = (unsigned short ) (isr_addr & 0xFFFF);
+    idt[interrupt].offset_high = (unsigned short) ((isr_addr >> 16) & 0xFFFF);
+    idt[interrupt].offset_low = (unsigned short ) (isr_addr & 0xFFFF);
     // offset of the cs segment from the gdt
-    idt_table[interrupt].segment = 0x08;
+    idt[interrupt].segment = 0x08;
     // run at PL0
-    idt_table[interrupt].flags = 0x8E00;
+    idt[interrupt].flags = 0x8E;
+    idt[interrupt].zero = 0;
 }
 
 void interrupts_init() {
+    idt_info.size = sizeof(idt_entry_t) * NUM_INTERRUPTS - 1;
+    idt_info.address = idt;
+    
     // remap the PICs to not conflict with other interrupts
     pic_remap();
 
@@ -56,10 +59,11 @@ void interrupts_init() {
     register_idt_entry(31, (unsigned int) interrupt_handler_31);
     // PIC1
     register_idt_entry(INT_PIC1_TIMER, (unsigned int) interrupt_handler_32);
-    register_idt_entry(INT_PIC1_KEYBOARD, (unsigned int) interrupt_handler_33);
+    register_idt_entry(INT_PIC1_KEYBOARD,
+            (unsigned int) interrupt_handler_33);
 
     // load the idt into the cpu
-    load_idt(idt);
+    load_idt(idt_info);
 
     // enable the interrupts we want in the pic
     // right now this is just the keyboard
@@ -69,21 +73,27 @@ void interrupts_init() {
 
 }
 
+void pic1_keyboard_handler() {
+    while (1);
+}
+
 void interrupt_handler(stack_state_t stack, unsigned int interrupt, cpu_state_t cpu) {
-    char val = 0;
+    char val_str[2];
+    val_str[0] = 0;
+    val_str[1] = 0;
 
     switch (interrupt) {
         case INT_PIC1_KEYBOARD:
-            val = get_key();
-            if (val) {
-                print(&val, IO_OUTPUT_FB);
+            val_str[0] = get_key();
+            if (val_str[0]) {
+                print(val_str, IO_OUTPUT_FB);
             }
             pic_acknowledge(interrupt);
             break;
 
         default:
             print_uint(interrupt);
-            magic_bp();
+            while(1);
             break;
     }
 }

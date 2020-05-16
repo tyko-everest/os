@@ -27,7 +27,8 @@ C_OBJS := $(C_OBJS:.c=.o)
 AS_FILES := loader.s \
 	asm/port.s \
 	asm/gdt.s \
-	asm/interrupts.s
+	asm/interrupts.s \
+	asm/paging.s
 AS_SRCS := $(addprefix $(SRC_DIR)/, $(AS_FILES))
 AS_OBJS := $(addprefix $(BUILD_DIR)/, $(AS_FILES))
 AS_OBJS := $(AS_OBJS:.s=.o)

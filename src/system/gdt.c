@@ -4,7 +4,7 @@ static tss_t tss0;
 
 static gdt_entry_t gdt_table[GDT_SIZE];
 
-gdt_header_t gdt = {GDT_SIZE * sizeof(gdt_entry_t) - 1, (unsigned int) gdt_table};
+gdt_header_t gdt_info = {GDT_SIZE * sizeof(gdt_entry_t) - 1, (unsigned int) gdt_table};
 
 extern unsigned int kernel_stack_start;
 
@@ -36,7 +36,9 @@ void setup_flat_memory() {
     // user data
     add_gdt_entry(0xFFFFF, 0, 0b11110010, 0b11000000);
 
-    load_gdt(gdt);
+    gdt_header_t test;
+
+    load_gdt(gdt_info);
     load_segment_registers();
 }
 

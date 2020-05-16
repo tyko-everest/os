@@ -25,7 +25,7 @@ void ata_pio_read(ata_num_t num, ata_type_t type, uint32_t address,
     
     uint8_t head_byte = ATA_HEAD_REG_RESERVED_MSK | ATA_HEAD_REG_LBA_MSK;
     if (type == ATA_MASTER) {
-        ;
+        
     } else if (type == ATA_SLAVE) {
         head_byte |= ATA_HEAD_REG_DRV_MSK;
     } else {
@@ -102,7 +102,7 @@ void ata_pio_write(ata_num_t num, ata_type_t type, uint32_t address,
     
     uint8_t head_byte = ATA_HEAD_REG_RESERVED_MSK | ATA_HEAD_REG_LBA_MSK;
     if (type == ATA_MASTER) {
-        ;
+        
     } else if (type == ATA_SLAVE) {
         head_byte |= ATA_HEAD_REG_DRV_MSK;
     } else {

@@ -30,9 +30,9 @@ typedef struct __attribute((packed)) {
 
 /** load_gdt:
  * Loads the specified gdt in assembly
- * @param gdt The address of a gdt struct
+ * @param gdt The address of a gdt_info struct
  */
-void load_gdt(gdt_header_t gdt);
+void load_gdt(gdt_header_t gdt_info);
 
 /** load_tss:
  * Loads the specified tss
@@ -43,7 +43,7 @@ void load_tss(tss_t tss);
 /** load_segment_registers
  * Loads all the segment registers with the proper segment descriptors
  */
-void load_segment_registers(void);
+void load_segment_registers();
 
 // adds a new entry to the gdt, automatically incrmenents to the next entry
 // after each call, make sure to call once for NULL entry

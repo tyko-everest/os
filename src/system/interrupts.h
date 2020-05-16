@@ -2,6 +2,8 @@
 #define INCLUDE_IDT_H
 
 #include "port.h"
+#include "keyboard.h"
+#include "print.h"
 
 #define NUM_INTERRUPTS 256
 
@@ -18,7 +20,7 @@
 
 // the various PIC interrupts we use */
 #define INT_PIC1_TIMER (PIC1_START_INTERRUPT + 0x0)
-#define INT_PIC1_KEYBOARD (PIC1_START_INTERRUPT +0x1)
+#define INT_PIC1_KEYBOARD (PIC1_START_INTERRUPT + 0x1)
 
 // number to send to PIC command port that issued interrupt
 #define PIC_ACK 0x20
@@ -31,7 +33,8 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     unsigned short offset_low;
     unsigned short segment;
-    unsigned short flags;
+    unsigned char zero;
+    unsigned char flags;
     unsigned short offset_high;
 } idt_entry_t;
 
@@ -96,9 +99,12 @@ void interrupt_handler_31(void);
 void interrupt_handler_32(void);
 void interrupt_handler_33(void);
 
+// used to reference the assembly wrapper for the c handler
+void pic1_keyboard_handler_entry(void);
+
 void register_idt_entry(unsigned int interrupt, unsigned int isr_addr);
 
-void load_idt(idt_header_t idt);
+void load_idt(idt_header_t idt_info);
 
 void interrupts_init(void);
 

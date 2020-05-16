@@ -10,7 +10,7 @@
 
 #define PAGE_SIZE 4096
 
-// notes these are NOT functions, they are label exported by the linker
+// notes these are NOT functions, they are labels exported by the linker
 // the addresses of the these are the start and end of the kernel
 void kernel_physical_start(void);
 void kernel_physical_end(void);
@@ -21,8 +21,12 @@ struct free_mem_segment {
 };
 typedef struct free_mem_segment free_mem_segment_t;
 
+void invalidate_tlb(void* addr);
+void* get_phys_addr(void* virt_addr);
 void init_free_memory(multiboot_info_t* mbt);
 void* get_free_page(void);
+void allocate_page(void *addr);
+
 
 #ifdef DEBUG
 void print_free_memory(void);
