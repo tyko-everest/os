@@ -12,10 +12,11 @@ load_gdt:
     ret
 
 ; load_tss - load a tss struct into cpu
-; stack: [esp] the return address
+; stack: [esp + 4] the segment selector
+;        [esp] the return address
 load_tss:
-    mov ax, 0x28
-    ltr ax
+    ltr [esp + 4]
+    ret
 
 ; load_segment_registers - load the segment registers with the correct
 ; values from the gdt

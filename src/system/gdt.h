@@ -36,9 +36,9 @@ void load_gdt(gdt_header_t gdt_info);
 
 /** load_tss:
  * Loads the specified tss
- * @param tss The address of a tss struct
+ * @param segment the segment selector in the gdt to use
  */
-void load_tss(tss_t tss);
+void load_tss(uint32_t segment);
 
 /** load_segment_registers
  * Loads all the segment registers with the proper segment descriptors

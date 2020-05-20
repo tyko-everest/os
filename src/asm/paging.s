@@ -1,7 +1,7 @@
 section .text
 
 ; invalidate_tlb - invalidate page in tlb
-; stack: [esp + 4] the page that handles this address will be cleared
+; stack: [esp + 4] the page that handles this virtual address will be cleared
 ;        [esp    ] the return address
 global invalidate_tlb
 invalidate_tlb:

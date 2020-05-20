@@ -84,7 +84,7 @@ KERNEL_VIRTUAL_PAGE_NUMBER equ (KERNEL_VIRTUAL_BASE >> 22)
 ; bit 0: 1 for present
 ; kernel and grub start at 0
 KERNEL_PDE_FLAGS equ    0x00000083
-PD_PDE_FLAGS equ        0x00000013
+PD_PDE_FLAGS equ        0x00000003
 
 section .data
 align 4096  ; page directories must be 4 KiB aligned
@@ -104,8 +104,16 @@ kernel_page_directory:
     ; this is not stored at address 0 so need to add physical addr to flags
     dd (PD_PDE_FLAGS + kernel_page_directory - KERNEL_VIRTUAL_BASE)
 
-KERNEL_HEAP_SIZE equ 4096
-KERNEL_STACK_SIZE equ 4096  ; in bytes
+align 4096
+global temp_page_table_label
+; used to temporarily store new page tables
+temp_page_table_label:
+    times 1024 dd 0
+
+; 4 KiB kernel heap
+; fixed size for now and pre-allocated
+KERNEL_HEAP_SIZE equ 0x1000
+KERNEL_STACK_SIZE equ 0x1000  ; in bytes
 
 section .bss
 align 4096
@@ -117,3 +125,5 @@ align 4096
 global kernel_stack
 kernel_stack:
     resb KERNEL_STACK_SIZE  ; reserve stack for the kernel
+
+align 

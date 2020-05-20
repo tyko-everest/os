@@ -2,30 +2,30 @@
 
 static free_mem_segment_t *first_free_segment = NULL;
 
-static uint8_t reserved_page_table[PAGE_SIZE];
+static void *temp_page_table = &temp_page_table_label;
 
 void* get_phys_addr(void* virt_addr) {
 
     uint32_t pd_index = (uint32_t) virt_addr >> 22;
     // pd is mapped to itself in the last virtual page
     uint32_t *pd = (uint32_t *) 0xFFFFF000;
-    // check to see if pde exists
+    // check to see if pde doesn't exist
     if (pd[pd_index] == 0) {
         return NULL;
     }
     // check if this is a 4 MiB pde
     if (pd[pd_index] & 0x80) {
-        return (void*)((pd[pd_index] & ~0x3FFFF) +
+        return (void*)((pd[pd_index] & ~0x3FFFF) |
                 ((uint32_t) virt_addr & 0x3FFFF));
     }
 
     uint32_t pt_index = ((uint32_t) virt_addr >> 12) & 0x3FF;
     uint32_t *pt = (uint32_t *) (0xFFC00000 + pd_index * PAGE_SIZE);
-    // check to see if pte exists
+    // check to see if pte doesn't exist
     if (pt[pt_index] == 0) {
         return NULL;
     }
-    return (void*)((pt[pt_index] & ~0xFFF) + ((uint32_t) virt_addr & 0xFFF));
+    return (void*)((pt[pt_index] & ~0xFFF) | ((uint32_t) virt_addr & 0xFFF));
 }
 
 /**
@@ -162,6 +162,8 @@ void init_free_memory(multiboot_info_t *mbt) {
 // TODO
 // this a temporary version that manually sets it to what will work in bochs
 // eventually it will detect memory properly
+// need to ensure the segments start on 4 KiB boundary and are a multiple
+// of that long 
 void init_free_memory(multiboot_info_t *mbt) {
     first_free_segment = kmalloc(sizeof(free_mem_segment_t));
     if (first_free_segment == NULL) {
@@ -206,9 +208,73 @@ void* get_free_page(void) {
     return (void*) (first_free_segment->addr - PAGE_SIZE);
 }
 
-void allocate_page(void *addr) {
+// generates a new page table in a new page which can map the given virt addr
+// helper function of allocate as it does not invalidate the tlb
+// cannot be used alone
+// TODO add safety check to flags
+void generate_page_table(void *virt_addr, uint32_t flags) {
+    uint32_t pd_index = (uint32_t) virt_addr >> 22;
+    // pd is mapped to itself in the last virtual page
+    uint32_t *pd = (uint32_t *) 0xFFFFF000;
 
+    // check if there is already a pde here
+    if (pd[pd_index] == 0) {
+        // try to get a new page to store this page table
+        uint32_t phys_addr = (uint32_t) get_free_page();
+        if (phys_addr == NULL) {
+            print("ERROR: failed to get mem for new page", IO_OUTPUT_SERIAL);
+            while(1);
+        } else {
+            // setup the pde in the pd to point to this pt
+            // set as read/write and present
+            pd[pd_index] = (phys_addr & ~0xFFF) | flags;
+        }
+    } else {
+        print("ERROR: pde is not empty", IO_OUTPUT_SERIAL);
+        while(1);
+    }
+}
 
+// allocates a physical page to the virtual page that corresponds with
+// the given virtual address
+void allocate_page(void *virt_addr, uint32_t flags) {
+    // tries to get a physical page to use
+    void *phys_addr = get_free_page();
+    if (phys_addr == NULL) {
+        print("ERROR: no mem for free page", IO_OUTPUT_SERIAL);
+        while(1);
+    }
+    
+    uint32_t pd_index = (uint32_t) virt_addr >> 22;
+    // pd is mapped to itself in the last virtual page
+    uint32_t *pd = (uint32_t *) 0xFFFFF000;
+
+    uint32_t pt_index = ((uint32_t) virt_addr >> 12) & 0x3FF;
+    uint32_t *pt = (uint32_t *) (0xFFC00000 + pd_index * PAGE_SIZE);
+
+    // check if this is a 4 MiB pde, i.e. no page table below it
+    if (pd[pd_index] & 0x80) {
+        print("ERROR: pde already contains 4 MiB page", IO_OUTPUT_SERIAL);
+        while(1);
+    // see if there is no pde that covers this part in memory
+    // if so we need to generate one
+    } else if (pd[pd_index] == 0) {
+        // make a new page table and set up its entry in the pd
+        generate_page_table(virt_addr, flags);
+    }
+    // now we know a pde exists for this segment of virt memory
+    // and it points to reserved space for a pt
+
+    // check if there is no existing pte at this location
+    if (pt[pt_index] == 0) {
+        // set as read/write and present, and user access
+        pt[pt_index] = ((uint32_t) phys_addr) & ~0xFFF | flags;
+    } else {
+        print("ERROR: page of virt_addr was not free", IO_OUTPUT_SERIAL);
+    }
+
+    // now invalidate the tlb for this page
+    invalidate_tlb(virt_addr);
 }
 
 #ifdef DEBUG

@@ -36,8 +36,6 @@ void setup_flat_memory() {
     // user data
     add_gdt_entry(0xFFFFF, 0, 0b11110010, 0b11000000);
 
-    gdt_header_t test;
-
     load_gdt(gdt_info);
     load_segment_registers();
 }
@@ -47,6 +45,6 @@ void setup_tss(uint32_t kernel_stack_base) {
     tss0.SS0 = 0x10;
     tss0.IOPB = sizeof(tss_t);
     // task state segment for sys calls
-    add_gdt_entry(sizeof(tss_t), &tss0, 0x89, 0x40);
-    load_tss(tss0);
+    add_gdt_entry(sizeof(tss_t), &tss0, 0x89, 0b11000000);
+    load_tss(0x28);
 }

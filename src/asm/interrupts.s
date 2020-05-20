@@ -1,7 +1,6 @@
 %macro no_error_code_interrupt_handler 1
 global interrupt_handler_%1
 interrupt_handler_%1:
-    ;xchg bx, bx
     push dword 0                    ; push 0 as error code
     push dword %1                   ; push interrupt number
     jmp common_interrupt_handler    ; jump to common handler
@@ -16,22 +15,42 @@ interrupt_handler_%1:
 
 extern interrupt_handler
 
-;section .text
+section .text
 
 common_interrupt_handler:
 
-    ;save the registers
+    ; save the registers
+    push ds
     pushad
+
+    ; we need to determine if this has been an interprivilege interrupt
+    ; get old cs from stack
+    mov eax, [esp + 12*4] ; skip 9 registers + err code + isr# + eip
+    ; get new cs
+    mov ebx, cs
+    ; compare the two
+    cmp eax, ebx
+    jne inter_privil
+    push 0
+    jmp done_privil_cmp
+inter_privil:
+    push 1
+done_privil_cmp:
+
     ; call c function to handle the rest
     call interrupt_handler
+    ; remove the the inter_privilege bool
+    add esp, 4
     ; restore the registers
     popad
+    pop ds
     
     ; add 8 due to error code and interrupt num pushed earlier
     ; stack must be exactly how it was when it entered the ISR
+    ; error code must be off the stack
     add esp, 8
 
-    ; re-enable iterrupts
+    ; re-enable interrupts
     sti
     iret
 
@@ -76,14 +95,8 @@ no_error_code_interrupt_handler 32
 ; keyboard
 no_error_code_interrupt_handler 33
 
-extern pic1_keyboard_handler
-global pic1_keyboard_handler_entry
-pic1_keyboard_handler_entry:
-    pushad
-    call pic1_keyboard_handler
-    popad
-    sti
-    ret
+; syscall
+no_error_code_interrupt_handler 128
 
 global load_idt
 ; load_idt - Loads the interrupt descriptor table (IDT).
@@ -101,4 +114,23 @@ disable_interrupts:
 global enable_interrupts
 enable_interrupts:
     sti
+    ret
+
+global enter_user_mode
+enter_user_mode:
+    mov ax, 0x20 | 0x03
+    mov ds, ax
+    ; mov es, ax
+    ; mov fs, ax
+    ; mov gs, ax
+    push 0x20 | 0x3         ; stack segment for user data, and ring 3
+    push 0xC0000000 - 4     ; base stack address
+    push 0                  ; eflags register
+    push 0x18 | 0x3         ; code segment for user, and ring 3
+    push 0                  ; eip for user program
+    iret
+
+global syscall_test
+syscall_test:
+    int 0x80
     ret

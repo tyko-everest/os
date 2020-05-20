@@ -1,6 +1,7 @@
 #ifndef INCLUDE_IDT_H
 #define INCLUDE_IDT_H
 
+#include "stdbool.h"
 #include "port.h"
 #include "keyboard.h"
 #include "print.h"
@@ -21,6 +22,8 @@
 // the various PIC interrupts we use */
 #define INT_PIC1_TIMER (PIC1_START_INTERRUPT + 0x0)
 #define INT_PIC1_KEYBOARD (PIC1_START_INTERRUPT + 0x1)
+
+#define INT_SYSCALL 0x80
 
 // number to send to PIC command port that issued interrupt
 #define PIC_ACK 0x20
@@ -49,6 +52,7 @@ typedef struct __attribute__((packed)) {
     unsigned int edx;
     unsigned int ecx;
     unsigned int eax;
+    unsigned int ds;
 } stack_state_t;
 
 typedef struct __attribute__((packed)) {
@@ -56,10 +60,21 @@ typedef struct __attribute__((packed)) {
     unsigned int eip;
     unsigned int cs;
     unsigned int eflags;
+    // note DO NOT use these unless this is an inter-privilege interrupt
+    // you have no idea what is at this memory otherwise
+    // could even be past the base of the stack
+    unsigned int esp;
+    unsigned int ss; 
 } cpu_state_t;
 
 void enable_interrupts(void);
 void disable_interrupts(void);
+
+// enters code stored at address 0x0, for testing
+// all memory must be setup before hand
+void enter_user_mode(void);
+
+void syscall_test(void);
 
 // system interrupts
 void interrupt_handler_0(void);
@@ -99,16 +114,18 @@ void interrupt_handler_31(void);
 void interrupt_handler_32(void);
 void interrupt_handler_33(void);
 
-// used to reference the assembly wrapper for the c handler
-void pic1_keyboard_handler_entry(void);
+// syscall
+void interrupt_handler_128(void);
 
-void register_idt_entry(unsigned int interrupt, unsigned int isr_addr);
+
+void register_idt_entry(unsigned int interrupt, unsigned int isr_addr, unsigned int ring);
 
 void load_idt(idt_header_t idt_info);
 
 void interrupts_init(void);
 
-void interrupt_handler(stack_state_t stack, unsigned int interrupt, cpu_state_t cpu);
+void interrupt_handler(bool inter_privilege, stack_state_t stack, 
+        unsigned int interrupt, cpu_state_t cpu);
 
 /** pic_acknowledge:
  *  Acknowledges an interrupt from either PIC 1 or PIC 2.
