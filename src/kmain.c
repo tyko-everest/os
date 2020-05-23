@@ -5,6 +5,7 @@
 #include "kheap.h"
 #include "ata.h"
 #include "page_frame.h"
+#include "file_system.h"
 
 #include "multiboot.h"
 
@@ -33,6 +34,12 @@ void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     // find what physical memory is free
     init_free_memory(mbt);
 
+    static uint32_t buffer[128];
+    for (int i = 0; i < 128; i++) {
+        buffer[i] = 0;
+    }
+    ata_identify(ATA0, ATA_MASTER, buffer);
+
     // copy program code to virtual address 0
     allocate_page(0, PRESENT | READ_WRITE | USER_ACCESS);
     uint8_t *ptr = (uint8_t *) 0;
@@ -47,11 +54,7 @@ void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
 
    
 
-    static uint32_t buffer[128];
-    for (int i = 0; i < 128; i++) {
-        buffer[i] = 0;
-    }
-    //ata_pio_read(ATA0, ATA_MASTER, 0, 1, buffer);
+
 
     while (1);
 }

@@ -59,8 +59,9 @@
 #define ATA_DEV_CONTROL_REG_SRST_MSK        0b00000100
 #define ATA_DEV_CONTROL_REG_nIEN_MSK        0b00000010
 
-#define ATA_READ_SECTORS 0x20
-#define ATA_WRITE_SECTORS 0x30
+#define ATA_READ_SECTORS    0x20
+#define ATA_WRITE_SECTORS   0x30
+#define ATA_IDENTIFY        0xEC
 
 typedef enum {
     ATA0 = 0,
@@ -77,5 +78,7 @@ void ata_pio_read(ata_num_t num, ata_type_t type, uint32_t address,
 
 void ata_pio_write(ata_num_t num, ata_type_t type, uint32_t address,
         uint8_t sector_count, uint16_t* buffer);
+
+void ata_identify(ata_num_t num, ata_type_t type, uint16_t* buffer);
 
 #endif
