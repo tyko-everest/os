@@ -70,7 +70,7 @@ void ata_pio_read(ata_num_t num, ata_type_t type, uint32_t address,
 
         // poll until the data is ready
         while (1) {
-            uint8_t status = inb(ATA_ALT_STATUS_REG(ata_base));
+            uint8_t status = inb(ATA_STATUS_REG(ata_base));
             // uint8_t error = inb(ATA_ERROR_REG(ata_base));
             status &= ATA_STATUS_REG_BSY_MSK | ATA_STATUS_REG_DRQ_MSK;
             if (status == ATA_STATUS_REG_DRQ_MSK) {
@@ -79,7 +79,7 @@ void ata_pio_read(ata_num_t num, ata_type_t type, uint32_t address,
             // TODO add timeout
         }
 
-        for (uint32_t byte_num = 0; byte_num < ATA_BLOCK_SIZE; byte_num++) {
+        for (uint32_t word_num = 0; word_num < ATA_BLOCK_SIZE / 2; word_num++) {
             buffer[buffer_index] = inw(ATA_DATA_REG(ata_base));
             buffer_index++;
         }
@@ -156,7 +156,7 @@ void ata_pio_write(ata_num_t num, ata_type_t type, uint32_t address,
             // TODO add timeout
         }
 
-        for (uint32_t byte_num = 0; byte_num < ATA_BLOCK_SIZE; byte_num++) {
+        for (uint32_t word_num = 0; word_num < ATA_BLOCK_SIZE / 2; word_num++) {
             outw(ATA_DATA_REG(ata_base), buffer[buffer_index]);
             buffer_index++;
         }
@@ -223,7 +223,7 @@ void ata_identify(ata_num_t num, ata_type_t type, uint16_t* buffer) {
         // TODO add timeout
     }
 
-    for (uint32_t byte_num = 0; byte_num < ATA_BLOCK_SIZE; byte_num++) {
+    for (uint32_t word_num = 0; word_num < ATA_BLOCK_SIZE / 2; word_num++) {
         buffer[buffer_index] = inw(ATA_DATA_REG(ata_base));
         buffer_index++;
     }

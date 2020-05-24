@@ -16,7 +16,8 @@ int main () {
 
     // to get the num bytes just use ls -l on disk.img
     // gives correct value as verified by ata identify command
-    uint32_t num_bytes = 268369920;
+    // this is bytes for a 256 MiB disk
+    uint32_t num_bytes = 268435456;
     uint32_t sector_size = 512;
     uint32_t num_sectors = num_bytes / sector_size;
 
@@ -49,7 +50,7 @@ int main () {
     sb.inodes_count = 0;
     sb.block_groups_count = 0;
     // number of block group desc entries that can fit in one block
-    uint32_t bgde_per_block = block_size / sizeof(fs_block_desc_t);
+    uint32_t bgd_per_block = block_size / sizeof(fs_block_desc_t);
     // used to find number of blocks the bgdt will take up
     uint32_t blocks_for_bgdt = 0;
     // used to deal with oddly sized last block group
@@ -59,7 +60,7 @@ int main () {
     while (num_blocks_remaining != 0) {
         // check if we have made enough block groups that a new block
         // is needed for the block group desc table
-        if (sb.block_groups_count % bgde_per_block == 0) {
+        if (sb.block_groups_count % bgd_per_block == 0) {
             blocks_for_bgdt++;
             num_blocks_remaining--;
         }

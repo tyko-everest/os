@@ -19,7 +19,9 @@ C_FILES := kmain.c \
 	system/gdt.c \
 	system/interrupts.c \
 	system/kheap.c \
-	system/page_frame.c
+	system/page_frame.c \
+	system/file_system.c \
+	clib/string.c
 C_SRCS := $(addprefix $(SRC_DIR)/, $(C_FILES))
 C_OBJS := $(addprefix $(BUILD_DIR)/, $(C_FILES))
 C_OBJS := $(C_OBJS:.c=.o)
@@ -77,6 +79,10 @@ $(BUILD_DIR)/utils/%.o: $(SRC_DIR)/utils/%.c
 	$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/system/%.o: $(SRC_DIR)/system/%.c
+	$(dir_guard)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/clib/%.o: $(SRC_DIR)/clib/%.c
 	$(dir_guard)
 	$(CC) $(CFLAGS) $< -o $@
 
