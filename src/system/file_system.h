@@ -1,13 +1,32 @@
 #ifndef INCLUDE_FILE_SYSTEM_H
 #define INCLUDE_FILE_SYSTEM_H
 
+#include "macros.h"
+
+// these are used when this file is being called inside the os
+#ifndef TEST_FS
+
 #include "stdbool.h"
 #include "stdint.h"
 #include "stddef.h"
 #include "string.h"
 
-// TODO put an abstraction layer between the driver and the file system
 #include "ata.h"
+
+#define SECTOR_SIZE ATA_BLOCK_SIZE
+
+// these are used when using test_fs under linux
+#else
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#define SECTOR_SIZE 512
+
+void setup_fp(void);
+
+#endif
 
 /*
 Header for uxt, the Unextented File System
@@ -33,6 +52,7 @@ this would then repeat, possibly with superblock and block group desc backup
 #define UXT_ROOT_INO 1
 
 // file modes
+#define UXT_MODE_MASK 0x0FFF
 #define UXT_XOTH 0x0001
 #define UXT_WOTH 0x0002
 #define UXT_ROTH 0x0004
@@ -42,7 +62,9 @@ this would then repeat, possibly with superblock and block group desc backup
 #define UXT_XUSR 0x0040
 #define UXT_WUSR 0x0080
 #define UXT_RUSR 0x0100
+
 // file types
+#define UXT_TYPE_MASK 0xF000
 #define UXT_FREG 0x1000
 #define UXT_FDIR 0x2000
 #define UXT_FLNK 0x3000
@@ -112,33 +134,72 @@ typedef struct __attribute((packed)) {
     uint32_t inode_bitmap;
     // block id of first block of inode table
     uint32_t inode_table;
+    // block if first data block
+    uint32_t first_block;
     // counts for this block group
     uint16_t free_blocks_count;
     uint16_t free_inodes_count;
+    uint32_t RESERVED[3];
 } fs_block_desc_t;
 
 typedef struct __attribute((packed)) {
     // inode number of the file
+    // if 0 this marks end of linked list
     uint32_t inode;
     // distance to next dir entry from start of this one
-    // since directory entries must be 4-byte aligned last 2 bit are free
-    // bit 0: last_rec, if set, indicates this is the last entry
-    // bit 1: next_block, if set, next entry is is the next block,
-    // and the offset starts from beginning of next block,
-    // i.e. if next entry is at very beginning of next block, offset = 0
+    // ensure if offset goes into next block, that you load the next block
     uint16_t offset;
     uint8_t name_len;
     uint8_t PADDING;
     // immediately after this struct the bytes for the name should start
 } fs_dir_entry_t;
 
+// TODO: most of these functions are hardcoded to 1 KiB buffers for now
+// needs to change to support different block sizes eventually
+
+// abstract away what interface actually gets the data
+// by default it compiled to use ata driver inside os
+// but defining TEST_FS compiles to use normal c file operations
+// used for testing the file system outside the os
 void read_block(uint32_t block_id, uint8_t *buf);
 void write_block(uint32_t block_id, uint8_t *buf);
+
+// reads superblock into memory and calculates some global numbers
+// that are used in calculations in functions below
 void fs_init(void);
 
+
+// helper functions
+
+// load the block group descriptor for the block that contains this inode
+// also returns the block group number, starting from 0
+uint32_t fs_load_bgd(uint32_t inode_num, fs_block_desc_t *ret_bgd);
+// get or set an inode by number
 fs_inode_t fs_get_inode(uint32_t inode_num);
-void fs_set_inode(uint32_t inode_num, fs_inode_t inode);
+void fs_set_inode(uint32_t inode_num, const fs_inode_t * inode);
+// finds first free bit in bitmap, used with either inode or block bitmaps
+// first bit is 0th bit
+// also sets the the bit to 1 to mark it as used
+// returns -1 if none found and no bits changed
+int32_t fs_find_free(uint32_t block_id);
+
+// setup a blank directory with . and .. dirs in it initially
+// for the given inode at its first block
+void fs_setup_blank_dir(uint32_t inode_num, const fs_inode_t *inode);
 
 
+// file system operation functions
+
+uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode);
+void fs_ls(const fs_inode_t *dir_inode);
+// given a file name, and directory inode, returne the inode num and struct
+uint32_t fs_find_file(const char *name, const fs_inode_t *dir_inode,
+    fs_inode_t *ret_inode);
+// makes a file
+// note dir is modified by strtok, change later if 
+// this turns out to not be okay
+int fs_mkfile(const char *name, char *dir, uint16_t mode,
+    uint16_t uid, uint16_t gid);
+void fs_mkdir(const char *name);
 
 #endif // INCLUDE_FILE_SYSTEM_H

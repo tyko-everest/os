@@ -21,46 +21,6 @@ uint8_t user_prog[USER_PROG_LEN] = {
     0x00, 0x00, 0xeb, 0xfe
 };
 
-// this is for testing
-// some values are harcoded for a block size of 1 KiB
-void setup_root_dir() {
-    uint16_t root_mode =
-        UXT_RUSR | UXT_WUSR | UXT_XUSR | UXT_RGRP | UXT_XGRP |
-        UXT_ROTH | UXT_XOTH | UXT_FDIR;
-
-    // setup root inode to point to directory entry list
-    fs_inode_t inode = {
-        .mode = root_mode,
-        .links = 2,
-        .user = 0,
-        .group = 0,
-        .blocks_count = 1,
-        .block_list[0] = 132
-    };
-    fs_set_inode(1, inode);
-    fs_inode_t test1 = fs_get_inode(1);
-
-    // setup initial list with . and .. directories
-    // then copy to disk
-    static uint8_t buf[1024];
-    fs_dir_entry_t dir_entry;
-
-    dir_entry.inode = UXT_ROOT_INO;
-    // 4 byte aligned
-    dir_entry.offset = 8 + 4;
-    dir_entry.name_len = 1;
-    uint8_t name[2] = {'.', '.'};
-
-    memcpy(buf, &dir_entry, 8);
-    memcpy(buf + 8, &name, 1);
-
-    dir_entry.name_len = 2;
-    memcpy(buf + 12, &dir_entry, 8);
-    memcpy(buf + 20, &name, 2);
-
-    write_block(132, buf);
-
-}
 
 void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     // setup flat memory model for kernel and user code
@@ -78,10 +38,6 @@ void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     // setup file system
     fs_init();
 
-
-    setup_root_dir();
-    static uint8_t buf[1024];
-    read_block(132, buf);
 
     // copy program code and data to virtual address 0
     allocate_page(0, PRESENT | READ_WRITE | USER_ACCESS);

@@ -12,7 +12,7 @@ uint32_t ceil_div(uint32_t n, uint32_t d) {
 }
 
 // this used to prep a uxt formatted disk file for use in bochs
-int main () {
+void make_fs() {
 
     // to get the num bytes just use ls -l on disk.img
     // gives correct value as verified by ata identify command
@@ -165,6 +165,55 @@ int main () {
     fwrite(&zeros_byte, 1, 1, fp);
 
     fclose(fp);
-    
-    return(0);
+}
+
+// this is for testing
+// some values are harcoded for a block size of 1 KiB
+// most block ids are harcoded too
+void setup_root_dir() {
+
+    uint8_t buf[1024];
+
+    uint16_t root_mode =
+        UXT_RUSR | UXT_WUSR | UXT_XUSR | UXT_RGRP | UXT_XGRP |
+        UXT_ROTH | UXT_XOTH | UXT_FDIR;
+
+    // setup root inode to point to directory entry list
+    fs_inode_t root_inode = {
+        .mode = root_mode,
+        .links = 2,
+        .user = 0,
+        .group = 0,
+        .blocks_count = 1,
+        .block_list[0] = 132
+    };
+    fs_set_inode(1, &root_inode);
+
+    // set inode 1 as used
+    memset(buf, 0, 1024);
+    buf[0] = 1;
+    write_block(3, buf);
+    // set first block as used
+    write_block(2, buf);
+
+
+    fs_setup_blank_dir(UXT_ROOT_INO, &root_inode);
+
+}
+
+int main() {
+    //make_fs();
+    // setup file pointer to write to the disk.img file
+    setup_fp();
+    // load the sb into memory and calculate global vals from it
+    fs_init();
+    // setup the root directory
+    //setup_root_dir();
+
+    fs_inode_t root_inode = fs_get_inode(UXT_ROOT_INO);
+    fs_ls(&root_inode);
+    int test1 = fs_mkfile("dev", "/", UXT_FDIR, 0, 0);
+    fs_ls(&root_inode);
+
+    return 0;
 }
