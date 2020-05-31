@@ -10,9 +10,6 @@ static uint32_t spb = 2;
 static uint32_t bgd_per_block;
 static uint32_t inodes_per_block;
 
-// used to return a null inode, for errors, etc.
-static fs_inode_t null_inode;
-
 // TODO make this dynamic at some point
 // block buffer to load a block into memory
 static uint8_t bb[1024];
@@ -130,12 +127,14 @@ int32_t fs_find_free(uint32_t block_id) {
     return -1;
 }
 
-void fs_setup_blank_dir(uint32_t inode_num, const fs_inode_t *inode) {
+void fs_setup_blank_dir(uint32_t blank_num, const fs_inode_t *blank_inode,
+    uint32_t parent_num) {
+
     uint8_t buf[1024];
     fs_dir_entry_t dir_entry;
     uint8_t name[2] = {'.', '.'};
 
-    dir_entry.inode = inode_num;
+    dir_entry.inode = blank_num;
     dir_entry.name_len = 1;
     dir_entry.offset =
         sizeof(fs_dir_entry_t) + ROUND_UP(dir_entry.name_len, 4);
@@ -147,6 +146,7 @@ void fs_setup_blank_dir(uint32_t inode_num, const fs_inode_t *inode) {
     memcpy(buf + sizeof(fs_dir_entry_t), &name, 1);
 
     // set .. directory
+    dir_entry.inode = parent_num;
     dir_entry.name_len = 2;
     memcpy(buf + tot_entry_size, &dir_entry, 8);
     memcpy(buf + tot_entry_size + sizeof(fs_dir_entry_t), &name, 2);
@@ -157,7 +157,7 @@ void fs_setup_blank_dir(uint32_t inode_num, const fs_inode_t *inode) {
     dir_entry.offset = block_size - tot_entry_size * 2;
     memcpy(buf + tot_entry_size * 2, &dir_entry, sizeof(fs_dir_entry_t));
 
-    write_block(inode->block_list[0], buf);
+    write_block(blank_inode->block_list[0], buf);
 }
 
 void fs_ls(const fs_inode_t *dir_inode) {
@@ -187,7 +187,7 @@ void fs_ls(const fs_inode_t *dir_inode) {
 uint32_t fs_find_file(const char *name, const fs_inode_t *dir_inode,
     fs_inode_t *ret_inode) {
 
-    static uint8_t buf[1024];
+    uint8_t buf[1024];
 
     if ((dir_inode->mode & 0xF000) != UXT_FDIR) {
         // error this is not a directory
@@ -216,16 +216,16 @@ uint32_t fs_find_file(const char *name, const fs_inode_t *dir_inode,
     }
 }
 
-// takes a path to a directory and returns its inode
+// takes an absolute path to a directory and returns its inode
 uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode) {
-    // dry the initial value to the root inode
+    // set the initial value to the root inode
     fs_inode_t dir_inode = fs_get_inode(UXT_ROOT_INO);
     // setup return vals in case it is the root inode
     uint32_t inode_num = UXT_ROOT_INO;
     *ret_inode = dir_inode;
+    
     // get the initial token
-    char *sub_dir;
-    sub_dir = strtok(dir, "/");
+    char *sub_dir = strtok(dir, "/");
     // iterate through the whole path
     while (sub_dir != NULL) {
         inode_num = fs_find_file(sub_dir, &dir_inode, &dir_inode);
@@ -238,16 +238,16 @@ uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode) {
     return inode_num;
 }
 
-// make a regular file at the specific directory
-int fs_mkfile(const char *name, char *dir, uint16_t mode,
-    uint16_t uid, uint16_t gid) {
+// make a regular file at the specified directory
+int fs_mkfile(const char *name, uint32_t dir_num, fs_inode_t dir_inode,
+    uint16_t mode, uint16_t uid, uint16_t gid) {
 
-    fs_inode_t dir_inode;
-    uint32_t dir_num = fs_path_to_inode(dir, &dir_inode);
-    // error if directory does not exist
-    if (dir_num == 0) {
-        return -1;
-    }
+    // fs_inode_t dir_inode;
+    // uint32_t dir_num = fs_path_to_inode(dir, &dir_inode);
+    // // error if directory does not exist
+    // if (dir_num == 0) {
+    //     return -1;
+    // }
 
     // these two are reused later if the check succeeds
     fs_inode_t file_inode;
@@ -274,8 +274,6 @@ int fs_mkfile(const char *name, char *dir, uint16_t mode,
     // also add one because inodes start at one
     file_num = first_free + bgd_num * sb.inodes_per_group + 1;
     
-    // keep mode and set type to file
-    mode = (mode & UXT_MODE_MASK) | UXT_FREG;
     file_inode.mode = mode;
     // one hardlink for files by default
     file_inode.links = 1;
@@ -294,7 +292,7 @@ int fs_mkfile(const char *name, char *dir, uint16_t mode,
     // if dir, set it up
     if ((file_inode.mode & 0xF000) == UXT_FDIR) {
         file_inode.links = 2;
-        fs_setup_blank_dir(file_num, &file_inode);
+        fs_setup_blank_dir(file_num, &file_inode, dir_num);
     }
 
     // 3. write it to disk

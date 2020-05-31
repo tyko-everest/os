@@ -11,8 +11,6 @@ typedef enum {
 
 void print_init(void);
 
-int print(char* buf, io_output_mode_t mode);
-void print_nl(void);
-void print_uint(unsigned int num);
+int print(const char* buf, io_output_mode_t mode);
 
 #endif /* INCLUDE_IO_H */

@@ -44,7 +44,7 @@ typedef struct {
  * 
  * @param buf The string to be displayed
  */
-void fb_write(char *buf);
+void fb_write(const char *buf);
 
 /** fb_init
  * Called before using framebuffer, clear the screen currently

@@ -5,6 +5,7 @@
 #include "port.h"
 #include "keyboard.h"
 #include "print.h"
+#include "shell.h"
 
 #define NUM_INTERRUPTS 256
 

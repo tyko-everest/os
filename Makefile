@@ -16,12 +16,15 @@ C_FILES := kmain.c \
 	drivers/keyboard.c \
 	drivers/ata.c \
 	utils/print.c \
+	utils/shell.c \
 	system/gdt.c \
 	system/interrupts.c \
 	system/kheap.c \
 	system/page_frame.c \
 	system/file_system.c \
-	clib/string.c
+	clib/string.c \
+	clib/stdlib.c \
+	clib/stdio.c
 C_SRCS := $(addprefix $(SRC_DIR)/, $(C_FILES))
 C_OBJS := $(addprefix $(BUILD_DIR)/, $(C_FILES))
 C_OBJS := $(C_OBJS:.c=.o)

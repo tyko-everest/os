@@ -108,12 +108,13 @@ void kfree(void *pointer) {
 }
 
 #ifdef DEBUG
+#include "stdio.h"
 void print_kmem_blocks(void) {
     kernel_heap_segment_meta_t *curr_seg = kernel_heap_first_segment;
     while (curr_seg != NULL) {
-        print_uint(curr_seg->size);
-        print_uint(curr_seg->free);
-        print("\n", IO_OUTPUT_FB);
+        printf("%d", curr_seg->size);
+        printf("%d", curr_seg->free);
+        printf("\n");
         curr_seg = curr_seg->next;
     }
 }

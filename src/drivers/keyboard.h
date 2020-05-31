@@ -1,3 +1,6 @@
+#ifndef INCLUDE_KEYBOARD_H
+#define INCLUDE_KEYBOARD_H
+
 #include "port.h"
 
 typedef enum {
@@ -69,6 +72,8 @@ typedef enum {
 
 #define KBD_DATA_PORT 0x60
 
+#define KB_BUF_SIZE 256
+
 /** read_scan_code:
  * Reads a scan code from the keyboard
  * 
@@ -76,4 +81,10 @@ typedef enum {
  */
 unsigned char read_scan_code(void);
 
+// reads in a scan code from the keyboard and returns its ASCII character
 char get_key(void);
+
+char kb_read_buf(void);
+int kb_write_buf(char c);
+
+#endif // INCLUDE_KEYBOARD_H

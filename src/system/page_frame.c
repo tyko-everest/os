@@ -278,12 +278,14 @@ void allocate_page(void *virt_addr, uint32_t flags) {
 }
 
 #ifdef DEBUG
+#include "stdio.h"
+
 void print_free_memory(void) {
     free_mem_segment_t *curr_seg = first_free_segment;
     while (curr_seg != NULL) {
-        print_uint(curr_seg->addr);
-        print_uint(curr_seg->addr + curr_seg->size);
-        print_nl();
+        printf("%X", curr_seg->addr);
+        printf("%X", curr_seg->addr + curr_seg->size);
+        printf("\n");
         curr_seg = curr_seg->next;
     }
 }

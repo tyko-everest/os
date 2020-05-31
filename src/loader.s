@@ -112,8 +112,8 @@ temp_page_table_label:
 
 ; 4 KiB kernel heap
 ; fixed size for now and pre-allocated
-KERNEL_HEAP_SIZE equ 0x1000
-KERNEL_STACK_SIZE equ 0x1000  ; in bytes
+KERNEL_HEAP_SIZE equ 0x10000
+KERNEL_STACK_SIZE equ 0x10000  ; in bytes
 
 section .bss
 align 4096

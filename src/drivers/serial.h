@@ -76,6 +76,6 @@ void serial_init(unsigned short com);
  * @param buf The string to be written
  * @param len The length of the string
  */
-void serial_write(char* buf);
+void serial_write(const char* buf);
 
 #endif /* INCLUDE_SERIAL_H */

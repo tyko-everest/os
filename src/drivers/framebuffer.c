@@ -5,7 +5,7 @@ static char *fb = (char *) FB_ADDR;
 // position of the next available location to print a character
 static fb_pos_t pos = {.row = 0, .col = 0};
 
-void fb_write(char *buf) {
+void fb_write(const char *buf) {
     unsigned int i = 0;
     while (buf[i] != NULL) {
 

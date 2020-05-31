@@ -30,7 +30,7 @@ void serial_init(unsigned short com) {
     serial_configure_modem(com);    
 }
 
-void serial_write(char* buf) {
+void serial_write(const char* buf) {
     unsigned int i = 0;
     while (buf[i] != NULL) {
         // wait until the port is ready

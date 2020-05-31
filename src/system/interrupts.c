@@ -61,9 +61,10 @@ void interrupts_init() {
     register_idt_entry(30, (unsigned int) interrupt_handler_30, 0);
     register_idt_entry(31, (unsigned int) interrupt_handler_31, 0);
     // PIC1
-    register_idt_entry(INT_PIC1_TIMER, (unsigned int) interrupt_handler_32, 0);
+    register_idt_entry(INT_PIC1_TIMER,
+        (unsigned int) interrupt_handler_32, 0);
     register_idt_entry(INT_PIC1_KEYBOARD,
-            (unsigned int) interrupt_handler_33, 0);
+        (unsigned int) interrupt_handler_33, 0);
     // syscall
     register_idt_entry(128, (unsigned int) interrupt_handler_128, 3);
 
@@ -78,6 +79,8 @@ void interrupts_init() {
 
 }
 
+extern int cmd_entered;
+
 void interrupt_handler(bool inter_privilege, stack_state_t stack, 
         unsigned int interrupt, cpu_state_t cpu) {
     
@@ -91,6 +94,10 @@ void interrupt_handler(bool inter_privilege, stack_state_t stack,
             if (val_str[0]) {
                 print(val_str, IO_OUTPUT_FB);
             }
+            // for now, this will be used to initiate a command
+            if (val_str[0] == '\n') {
+                cmd_entered = 1;
+            }
             pic_acknowledge(interrupt);
             break;
 
@@ -99,7 +106,7 @@ void interrupt_handler(bool inter_privilege, stack_state_t stack,
             break;
 
         default:
-            print_uint(interrupt);
+            print("unhandled interrupt", IO_OUTPUT_FB);
             while(1);
             break;
     }

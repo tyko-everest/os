@@ -7,6 +7,7 @@
 #include "ata.h"
 #include "page_frame.h"
 #include "file_system.h"
+#include "shell.h"
 
 #include "multiboot.h"
 
@@ -20,7 +21,6 @@ uint8_t user_prog[USER_PROG_LEN] = {
     0xb8, 0x69, 0x00, 0x00, 0x00, 0xcd, 0x80, 0xb8, 0x20, 0x04,
     0x00, 0x00, 0xeb, 0xfe
 };
-
 
 void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     // setup flat memory model for kernel and user code
@@ -37,7 +37,14 @@ void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     init_free_memory(mbt);
     // setup file system
     fs_init();
+    shell_init();
 
+    fs_inode_t root_inode = fs_get_inode(UXT_ROOT_INO);
+    fs_ls(&root_inode);
+
+    while(1) {
+        shell_execute();
+    }
 
     // copy program code and data to virtual address 0
     allocate_page(0, PRESENT | READ_WRITE | USER_ACCESS);

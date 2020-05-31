@@ -10,6 +10,7 @@
 #include "stdint.h"
 #include "stddef.h"
 #include "string.h"
+#include "stdio.h"
 
 #include "ata.h"
 
@@ -185,7 +186,10 @@ int32_t fs_find_free(uint32_t block_id);
 
 // setup a blank directory with . and .. dirs in it initially
 // for the given inode at its first block
-void fs_setup_blank_dir(uint32_t inode_num, const fs_inode_t *inode);
+// @params blank_num and blank_inode are for the directory being setup
+// dir_num is for its parent
+void fs_setup_blank_dir(uint32_t blank_num, const fs_inode_t *blank_inode,
+    uint32_t parent_num);
 
 
 // file system operation functions
@@ -197,9 +201,7 @@ uint32_t fs_find_file(const char *name, const fs_inode_t *dir_inode,
     fs_inode_t *ret_inode);
 // makes a file
 // note dir is modified by strtok, change later if 
-// this turns out to not be okay
-int fs_mkfile(const char *name, char *dir, uint16_t mode,
-    uint16_t uid, uint16_t gid);
-void fs_mkdir(const char *name);
+int fs_mkfile(const char *name, uint32_t dir_num, fs_inode_t dir_inode,
+    uint16_t mode, uint16_t uid, uint16_t gid);
 
 #endif // INCLUDE_FILE_SYSTEM_H
