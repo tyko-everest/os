@@ -3,17 +3,6 @@
 
 #include "macros.h"
 
-// typedef void * va_list;
-
-// #define va_start(ap, last_arg) \
-//     ap = &last_arg + 1
-
-// #define va_arg(ap, type) \
-//     *((type *) ap) 
-   
-
-// #define va_end(ap)
-
 typedef __builtin_va_list va_list;
 #define va_start(v,l)   __builtin_va_start(v,l)
 #define va_end(v)       __builtin_va_end(v)

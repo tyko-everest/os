@@ -1,27 +1,23 @@
 #include "file_system.h"
 
 static fs_super_block_t sb;
-static uint32_t block_size = 1024;
 // to convert block num to sector num
 // default to 1 KiB block sizes, also necessary to read in super block
 // with read_block function
 static uint32_t spb = 2;
+static uint32_t block_size = 1024;
 // number of block group descriptors that can fit in one block
 static uint32_t bgd_per_block;
 static uint32_t inodes_per_block;
 
-// TODO make this dynamic at some point
-// block buffer to load a block into memory
-static uint8_t bb[1024];
-
 #ifndef TEST_FS
 
 void read_block(uint32_t block_id, uint8_t *buf) {
-    ata_pio_read(ATA0, ATA_MASTER, block_id * spb, spb, buf);
+    ata_pio_read(ATA0, ATA_MASTER, block_id * spb, spb, (uint16_t*) buf);
 }
 
 void write_block(uint32_t block_id, uint8_t *buf) {
-    ata_pio_write(ATA0, ATA_MASTER, block_id * spb, spb, buf);
+    ata_pio_write(ATA0, ATA_MASTER, block_id * spb, spb, (uint16_t*) buf);
 }
 
 #else
@@ -141,7 +137,6 @@ void fs_setup_blank_dir(uint32_t blank_num, const fs_inode_t *blank_inode,
     uint32_t tot_entry_size = dir_entry.offset;
 
     // set . directory
-    uint32_t index = 0;
     memcpy(buf, &dir_entry, sizeof(fs_dir_entry_t));
     memcpy(buf + sizeof(fs_dir_entry_t), &name, 1);
 
@@ -160,22 +155,120 @@ void fs_setup_blank_dir(uint32_t blank_num, const fs_inode_t *blank_inode,
     write_block(blank_inode->block_list[0], buf);
 }
 
+uint32_t fs_get_block_id(uint32_t block_index, const fs_inode_t *inode) {
+    uint32_t buf[256];
+    
+    // direct block pointers
+    if (block_index < 12) {
+        return inode->block_list[block_index];
+    }
+    // block_index now starts at 0 for first singly indirect pointer
+    block_index -= 12;
+
+    uint32_t ids_per_block = block_size / sizeof(uint32_t);
+    // single indirect block pointers
+    if (block_index < ids_per_block) {
+        read_block(inode->block_list[12], (uint8_t *) buf);
+        return buf[block_index];
+    }
+    block_index -= ids_per_block;
+
+    // squared
+    uint32_t ids_per_block_2 = ids_per_block * ids_per_block;
+    // doubly indirect block pointers
+    if (block_index < ids_per_block_2) {
+        read_block(inode->block_list[13], (uint8_t *) buf);
+        read_block(buf[block_index / ids_per_block], (uint8_t *) buf);
+        return buf[block_index % ids_per_block];
+    }
+    block_index -= ids_per_block_2;
+
+    // cubed
+    uint32_t ids_per_block_3 = ids_per_block_2 * ids_per_block;
+    // triply indirect block pointers
+    if (block_index < ids_per_block_3) {
+        read_block(inode->block_list[14], (uint8_t *) buf);
+        read_block(buf[block_index / ids_per_block_2], (uint8_t *) buf);
+        read_block(buf[(block_index % ids_per_block_2) / ids_per_block],
+            (uint8_t *) buf);
+        return buf[block_index % ids_per_block];
+    }
+
+    // 0 is not a valid block to get from an inode block_list
+    // indicates the block_index was out of range
+    return 0;
+}
+
+int fs_set_block_id(uint32_t block_id, uint32_t block_index, fs_inode_t *inode) {
+    uint32_t buf[256];
+    
+    // direct block pointers
+    if (block_index < 12) {
+        inode->block_list[block_index] = block_id;
+        return 0;
+    }
+    // block_index now starts at 0 for first singly indirect pointer
+    block_index -= 12;
+
+    uint32_t ids_per_block = block_size / sizeof(uint32_t);
+    // single indirect block pointers
+    if (block_index < ids_per_block) {
+        read_block(inode->block_list[12], (uint8_t *) buf);
+        buf[block_index] = block_id;
+        write_block(inode->block_list[12], (uint8_t *) buf);
+        return 0;
+    }
+    block_index -= ids_per_block;
+
+    // squared
+    uint32_t ids_per_block_2 = ids_per_block * ids_per_block;
+    // doubly indirect block pointers
+    if (block_index < ids_per_block_2) {
+        read_block(inode->block_list[13], (uint8_t *) buf);
+        read_block(buf[block_index / ids_per_block], (uint8_t *) buf);
+        buf[block_index % ids_per_block] = block_id;
+        write_block(buf[block_index / ids_per_block], (uint8_t *) buf);
+        return 0;
+    }
+    block_index -= ids_per_block_2;
+
+    // cubed
+    uint32_t ids_per_block_3 = ids_per_block_2 * ids_per_block;
+    // triply indirect block pointers
+    if (block_index < ids_per_block_3) {
+        read_block(inode->block_list[14], (uint8_t *) buf);
+        read_block(buf[block_index / ids_per_block_2], (uint8_t *) buf);
+        read_block(buf[(block_index % ids_per_block_2) / ids_per_block],
+            (uint8_t *) buf);
+        buf[block_index % ids_per_block] = block_id;
+        write_block(buf[(block_index % ids_per_block_2) / ids_per_block],
+            (uint8_t *) buf);
+        return 0;
+    }
+
+    // 0 is not a valid block to get from an inode block_list
+    // indicates the block_index was out of range
+    return 0;
+}
+
 void fs_ls(const fs_inode_t *dir_inode) {
+    uint8_t buf[1024];
+
     if ((dir_inode->mode & 0xF000) != UXT_FDIR) {
         // error this is not a directory
         return;
     }
 
-    read_block(dir_inode->block_list[0], bb);
+    read_block(dir_inode->block_list[0], buf);
     size_t i = 0;
     while (1) {
         // first entry will be at start of this block
-        fs_dir_entry_t *entry = (fs_dir_entry_t *) (bb + i);
+        fs_dir_entry_t *entry = (fs_dir_entry_t *) (buf + i);
         if (entry->inode == 0) {
             break;
         }
 
-        printf("%.*s ", entry->name_len, bb + i + sizeof(fs_dir_entry_t));
+        printf("%.*s ", entry->name_len, buf + i + sizeof(fs_dir_entry_t));
         i += entry->offset;
     }
 
@@ -184,7 +277,7 @@ void fs_ls(const fs_inode_t *dir_inode) {
 }
 
 // try to find the specified file in the specified directory
-uint32_t fs_find_file(const char *name, const fs_inode_t *dir_inode,
+uint32_t fs_get_file(const char *name, const fs_inode_t *dir_inode,
     fs_inode_t *ret_inode) {
 
     uint8_t buf[1024];
@@ -228,7 +321,7 @@ uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode) {
     char *sub_dir = strtok(dir, "/");
     // iterate through the whole path
     while (sub_dir != NULL) {
-        inode_num = fs_find_file(sub_dir, &dir_inode, &dir_inode);
+        inode_num = fs_get_file(sub_dir, &dir_inode, &dir_inode);
         // if the specified sub dir was not found, this dir doesn't exist
         if (inode_num == 0) {
             return 0;
@@ -239,19 +332,14 @@ uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode) {
 }
 
 // make a regular file at the specified directory
-int fs_mkfile(const char *name, uint32_t dir_num, fs_inode_t dir_inode,
+int fs_mkfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
     uint16_t mode, uint16_t uid, uint16_t gid) {
 
-    // fs_inode_t dir_inode;
-    // uint32_t dir_num = fs_path_to_inode(dir, &dir_inode);
-    // // error if directory does not exist
-    // if (dir_num == 0) {
-    //     return -1;
-    // }
+    uint8_t buf[1024];
 
     // these two are reused later if the check succeeds
     fs_inode_t file_inode;
-    uint32_t file_num = fs_find_file(name, &dir_inode, &file_inode);
+    uint32_t file_num = fs_get_file(name, dir_inode, &file_inode);
     // error if file exists
     if (file_num != 0) {
         return -1;
@@ -275,8 +363,6 @@ int fs_mkfile(const char *name, uint32_t dir_num, fs_inode_t dir_inode,
     file_num = first_free + bgd_num * sb.inodes_per_group + 1;
     
     file_inode.mode = mode;
-    // one hardlink for files by default
-    file_inode.links = 1;
     file_inode.user = uid;
     file_inode.group = gid;
     file_inode.blocks_count = 1;
@@ -284,13 +370,16 @@ int fs_mkfile(const char *name, uint32_t dir_num, fs_inode_t dir_inode,
 
     // 2. allocate it a block
 
+    // for now this fails if the first block is empty
     first_free = fs_find_free(bgd.block_bitmap);
     if (first_free == -1) {
         return -1;
     }
     file_inode.block_list[0] = first_free + bgd.first_block;
-    // if dir, set it up
-    if ((file_inode.mode & 0xF000) == UXT_FDIR) {
+    // specialized setup for each file type
+    if ((file_inode.mode & 0xF000) == UXT_FREG) {
+        file_inode.links = 1;
+    } else if ((file_inode.mode & 0xF000) == UXT_FDIR) {
         file_inode.links = 2;
         fs_setup_blank_dir(file_num, &file_inode, dir_num);
     }
@@ -303,12 +392,12 @@ int fs_mkfile(const char *name, uint32_t dir_num, fs_inode_t dir_inode,
     // 4. add this file to the specified directory
     // TODO add check to ensure this can actually fit within dir file
 
-    read_block(dir_inode.block_list[0], bb);
+    read_block(dir_inode->block_list[0], buf);
     size_t i = 0;
     fs_dir_entry_t *last_entry;
     do {
         // first entry will be at start of this block
-        last_entry = (fs_dir_entry_t *) (bb + i);
+        last_entry = (fs_dir_entry_t *) (buf + i);
         i += last_entry->offset;
     } while (last_entry->inode != 0);
 
@@ -323,13 +412,72 @@ int fs_mkfile(const char *name, uint32_t dir_num, fs_inode_t dir_inode,
     memcpy(last_entry + 1, name, last_entry->name_len);
 
     // setup new sentinel entry
-    last_entry = (fs_dir_entry_t *) (bb + block_size - new_last_offset);
+    last_entry = (fs_dir_entry_t *) (buf + block_size - new_last_offset);
     last_entry->inode = 0;
     last_entry->offset = new_last_offset;
-    write_block(dir_inode.block_list[0], bb);
+    write_block(dir_inode->block_list[0], buf);
 
 
     return 0;
 
 }
 
+int fs_rmfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode) {
+
+}
+
+int fs_readfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
+    uint32_t start, uint32_t num, uint8_t *buf) {
+    
+    fs_inode_t inode;
+    uint32_t inum = fs_get_file(name, dir_inode, &inode);
+
+    if (inum == 0) {
+        return -1;
+    }
+
+    uint32_t blocks_read = MIN(num, inode.blocks_count);
+    for (size_t i = start; i < start + blocks_read; i++) {
+        read_block(fs_get_block_id(i, &inode), buf + i * block_size);
+    }
+
+    return blocks_read;
+}
+
+int fs_writefile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
+    uint32_t start, uint32_t num, uint8_t *buf) {
+
+    fs_inode_t inode;
+    uint32_t inum = fs_get_file(name, dir_inode, &inode);
+
+    if (inum == 0) {
+        return -1;
+    }
+
+    for (size_t i = start; i < start + num; i++) {
+        uint32_t block_id;
+        // if index equals block count, block has yet to be assigned
+        if (i == inode.blocks_count) {
+            fs_block_desc_t bgd;
+            uint32_t bgd_num = fs_load_bgd(dir_num, &bgd);
+            int32_t first_free = fs_find_free(bgd.block_bitmap);
+            // for now fail if cannot find one in this group
+            if (first_free == -1) {
+                return -1;
+            }
+            block_id = first_free + bgd.first_block;
+            fs_set_block_id(block_id, i, &inode);
+            inode.blocks_count++;
+
+        // there is already a block for this index
+        } else {
+            block_id = fs_get_block_id(i, &inode);
+        }
+
+        write_block(block_id, buf + (i - start) * block_size);
+    }
+
+    fs_set_inode(inum, &inode);
+
+    return 0;    
+}

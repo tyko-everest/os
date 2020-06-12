@@ -18,12 +18,12 @@ void shell_execute(void) {
         scanf("%s", arg);
 
         if (memcmp(cmd, "MKDIR", 5) == 0) {
-            fs_mkfile(arg, cur_num, cur_inode, UXT_FDIR, 0, 0);
+            fs_mkfile(arg, cur_num, &cur_inode, UXT_FDIR, 0, 0);
         } else if (memcmp(cmd, "LS", 2) == 0) {
             fs_ls(&cur_inode);
         } else if (memcmp(cmd, "CD", 2) == 0) {
             fs_inode_t new_inode;
-            uint32_t new_num = fs_find_file(arg, &cur_inode, &new_inode);
+            uint32_t new_num = fs_get_file(arg, &cur_inode, &new_inode);
             if (new_num != 0) {
                 cur_num = new_num;
                 cur_inode = new_inode;

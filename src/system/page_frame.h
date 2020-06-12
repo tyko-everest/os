@@ -1,12 +1,12 @@
 #ifndef INCLUDE_PAGE_FRAME_H
 #define INCLUDE_PAGE_FRAME_H
 
-#include "stddef.h"
-#include "stdint.h"
-#include "stdbool.h"
-#include "print.h"
-#include "kheap.h"
-#include "multiboot.h"
+#include "clib/stddef.h"
+#include "clib/stdint.h"
+#include "clib/stdbool.h"
+#include "utils/print.h"
+#include "system/kheap.h"
+#include "system/multiboot.h"
 
 #define PAGE_SIZE 4096
 
@@ -24,18 +24,18 @@ void kernel_physical_end(void);
 // this is used for temp storage of new page tables
 void temp_page_table_label(void);
 
-struct free_mem_segment {
+struct mem_segment {
     uint32_t addr, size;
-    struct free_mem_segment *prev, *next;
+    struct mem_segment *prev, *next;
 };
-typedef struct free_mem_segment free_mem_segment_t;
+typedef struct mem_segment mem_segment_t;
 
 void invalidate_tlb(void* virt_addr);
-void* get_phys_addr(void* virt_addr);
+uint32_t get_phys_addr(void* virt_addr);
 void init_free_memory(multiboot_info_t* mbt);
-void* get_free_page(void);
+uint32_t get_free_page(void);
 void generate_page_table(void *virt_addr, uint32_t flags);
-void allocate_page(void *virt_addr, uint32_t flags);
+uint32_t allocate_page(void *virt_addr, uint32_t flags);
 
 
 #ifdef DEBUG

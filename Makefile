@@ -1,5 +1,5 @@
 CC := gcc
-C_INC :=  -Isrc/drivers -Isrc/asm -Isrc/utils -Isrc/system -Isrc/clib
+C_INC :=  -Isrc -Isrc/drivers -Isrc/asm -Isrc/utils -Isrc/system -Isrc/clib
 CFLAGS := $(C_INC) \
 		 -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
 		 -nostartfiles -nodefaultlibs -Wall -Wextra -c -DDEBUG -g
@@ -22,6 +22,7 @@ C_FILES := kmain.c \
 	system/kheap.c \
 	system/page_frame.c \
 	system/file_system.c \
+	system/proc.c \
 	clib/string.c \
 	clib/stdlib.c \
 	clib/stdio.c

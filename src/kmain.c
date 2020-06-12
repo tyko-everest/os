@@ -42,9 +42,14 @@ void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     fs_inode_t root_inode = fs_get_inode(UXT_ROOT_INO);
     fs_ls(&root_inode);
 
-    while(1) {
-        shell_execute();
-    }
+    static uint8_t buf[2048];
+    // fs_mkfile("TEST", UXT_ROOT_INO, &root_inode, UXT_FREG, 0, 0);
+    // for (uint32_t i = 0; i < 2048; i++) {
+    //     buf[i] = i % 256;
+    // }
+    // fs_writefile("TEST", UXT_ROOT_INO, &root_inode, 0, 2, buf);
+    // memset(buf, 0, 2048);
+    fs_readfile("TEST", UXT_ROOT_INO, &root_inode, 0, 2, buf);
 
     // copy program code and data to virtual address 0
     allocate_page(0, PRESENT | READ_WRITE | USER_ACCESS);

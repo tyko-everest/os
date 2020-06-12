@@ -191,17 +191,37 @@ int32_t fs_find_free(uint32_t block_id);
 void fs_setup_blank_dir(uint32_t blank_num, const fs_inode_t *blank_inode,
     uint32_t parent_num);
 
+// for the given inode turns a block_list index into a block id
+// necessary for dealing with indirect pointers after first 12 direct ones
+uint32_t fs_get_block_id(uint32_t block_index, const fs_inode_t *inode);
+// sets the desired part of the block pointer structure to the desired block id
+int fs_set_block_id(uint32_t block_id, uint32_t block_index, fs_inode_t *inode);
+uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode);
+
 
 // file system operation functions
 
-uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode);
 void fs_ls(const fs_inode_t *dir_inode);
-// given a file name, and directory inode, returne the inode num and struct
-uint32_t fs_find_file(const char *name, const fs_inode_t *dir_inode,
+
+// given a file name, and directory inode, returns the inode num and struct
+uint32_t fs_get_file(const char *name, const fs_inode_t *dir_inode,
     fs_inode_t *ret_inode);
+
 // makes a file
 // note dir is modified by strtok, change later if 
-int fs_mkfile(const char *name, uint32_t dir_num, fs_inode_t dir_inode,
+int fs_mkfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
     uint16_t mode, uint16_t uid, uint16_t gid);
+
+int fs_rmfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode);
+
+// read num blocks starting at start of the specified file
+// return number of blocks read, or -1 if error
+int fs_readfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
+    uint32_t start, uint32_t num, uint8_t *buf);
+
+// write num blocks starting at start of the specified file
+// return number of blocks read, or -1 if error
+int fs_writefile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
+    uint32_t start, uint32_t num, uint8_t *buf);
 
 #endif // INCLUDE_FILE_SYSTEM_H

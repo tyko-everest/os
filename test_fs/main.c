@@ -112,6 +112,7 @@ void make_fs() {
             1 + blocks_for_bgdt + i * total_blocks_per_group;
         block_desc.inode_bitmap = block_desc.block_bitmap + 1;
         block_desc.inode_table = block_desc.inode_bitmap + 1;
+        block_desc.first_block = block_desc.inode_table + inode_table_block_size;
         fwrite(&block_desc, 1, sizeof(fs_block_desc_t), fp);
     }
     // handle last block group desc entry, potentially non-full
@@ -197,23 +198,19 @@ void setup_root_dir() {
     write_block(2, buf);
 
 
-    fs_setup_blank_dir(UXT_ROOT_INO, &root_inode);
+    fs_setup_blank_dir(UXT_ROOT_INO, &root_inode, UXT_ROOT_INO);
 
 }
 
 int main() {
-    //make_fs();
+    make_fs();
     // setup file pointer to write to the disk.img file
     setup_fp();
     // load the sb into memory and calculate global vals from it
     fs_init();
     // setup the root directory
-    //setup_root_dir();
+    setup_root_dir();
 
-    fs_inode_t root_inode = fs_get_inode(UXT_ROOT_INO);
-    fs_ls(&root_inode);
-    int test1 = fs_mkfile("dev", "/", UXT_FDIR, 0, 0);
-    fs_ls(&root_inode);
 
     return 0;
 }

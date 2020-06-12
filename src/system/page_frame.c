@@ -1,10 +1,10 @@
 #include "page_frame.h"
 
-static free_mem_segment_t *first_free_segment = NULL;
+static mem_segment_t *first_free_segment = NULL;
 
 static void *temp_page_table = &temp_page_table_label;
 
-void* get_phys_addr(void* virt_addr) {
+uint32_t get_phys_addr(void* virt_addr) {
 
     uint32_t pd_index = (uint32_t) virt_addr >> 22;
     // pd is mapped to itself in the last virtual page
@@ -15,8 +15,7 @@ void* get_phys_addr(void* virt_addr) {
     }
     // check if this is a 4 MiB pde
     if (pd[pd_index] & 0x80) {
-        return (void*)((pd[pd_index] & ~0x3FFFF) |
-                ((uint32_t) virt_addr & 0x3FFFF));
+        return (pd[pd_index] & ~0x3FFFF) | ((uint32_t) virt_addr & 0x3FFFF);
     }
 
     uint32_t pt_index = ((uint32_t) virt_addr >> 12) & 0x3FF;
@@ -25,7 +24,7 @@ void* get_phys_addr(void* virt_addr) {
     if (pt[pt_index] == 0) {
         return NULL;
     }
-    return (void*)((pt[pt_index] & ~0xFFF) | ((uint32_t) virt_addr & 0xFFF));
+    return (pt[pt_index] & ~0xFFF) | ((uint32_t) virt_addr & 0xFFF);
 }
 
 /**
@@ -33,20 +32,20 @@ void init_free_memory(multiboot_info_t *mbt) {
 
     // allocate space for a temporary first free segment struct
     // needed to get a linked list going for the free segment list
-    free_mem_segment_t *temp_first_seg = kmalloc(sizeof(free_mem_segment_t));
+    mem_segment_t *temp_first_seg = kmalloc(sizeof(mem_segment_t));
     if (temp_first_seg == NULL) {
         print("ERROR: cannot allocate memory\n", IO_OUTPUT_SERIAL);
         return;
     }
 
-    free_mem_segment_t *curr_seg = temp_first_seg;
+    mem_segment_t *curr_seg = temp_first_seg;
     
     // need offsets because we are in the higher half
     memory_map_t* mmap = (memory_map_t*) (mbt->mmap_addr + 0xC0000000);
     while((uint32_t) mmap < mbt->mmap_addr + mbt->mmap_length + 0xC0000000) {
         if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
             // make the next new segment
-            free_mem_segment_t *next_seg = kmalloc(sizeof(free_mem_segment_t));
+            mem_segment_t *next_seg = kmalloc(sizeof(mem_segment_t));
             if (next_seg == NULL) {
                 print("ERROR: cannot allocate memory\n", IO_OUTPUT_SERIAL);
                 return;
@@ -109,7 +108,7 @@ void init_free_memory(multiboot_info_t *mbt) {
         } else if (kernel_addr < curr_seg->addr + curr_seg->size - 1) {
             // make a new segment to go after the current segment the kernel
             // is splitting, memory: curr_seg -> kernel -> new_seg
-            free_mem_segment_t *new_seg = kmalloc(sizeof(free_mem_segment_t));
+            mem_segment_t *new_seg = kmalloc(sizeof(mem_segment_t));
             if (new_seg == NULL) {
                 print("ERROR: cannot allocate memory\n", IO_OUTPUT_SERIAL);
                 return;
@@ -165,7 +164,7 @@ void init_free_memory(multiboot_info_t *mbt) {
 // need to ensure the segments start on 4 KiB boundary and are a multiple
 // of that long 
 void init_free_memory(multiboot_info_t *mbt) {
-    first_free_segment = kmalloc(sizeof(free_mem_segment_t));
+    first_free_segment = kmalloc(sizeof(mem_segment_t));
     if (first_free_segment == NULL) {
         print("ERROR: cannot allocate memory\n", IO_OUTPUT_SERIAL);
         return;
@@ -179,16 +178,22 @@ void init_free_memory(multiboot_info_t *mbt) {
 }
 
 // returns the physical address of an available page
-void* get_free_page(void) {
+// this page is marked as taken after it returns successfully
+// so it is important to use it
+uint32_t get_free_page(void) {
     // check if we have any free memory left
+    uint32_t ret_addr = 0;
     if (first_free_segment != NULL) {
+        // save this address of the start of the free page
+        ret_addr = first_free_segment->addr;
+
         first_free_segment->addr += PAGE_SIZE;
         first_free_segment->size -= PAGE_SIZE;
 
         // check if we have killed off an entire free segment
         if (first_free_segment->size == 0) {
             // save the current list pointer, as it will change below
-            free_mem_segment_t *temp = first_free_segment;
+            mem_segment_t *temp = first_free_segment;
             // removing first segment, so cleanup the pointer of next segment
             if (first_free_segment->next != NULL) {
                 first_free_segment = first_free_segment->next;
@@ -205,7 +210,7 @@ void* get_free_page(void) {
         print("ERROR: no free pages", IO_OUTPUT_SERIAL);
         while(1);
     }
-    return (void*) (first_free_segment->addr - PAGE_SIZE);
+    return ret_addr;
 }
 
 // generates a new page table in a new page which can map the given virt addr
@@ -237,9 +242,10 @@ void generate_page_table(void *virt_addr, uint32_t flags) {
 
 // allocates a physical page to the virtual page that corresponds with
 // the given virtual address
-void allocate_page(void *virt_addr, uint32_t flags) {
+// return the physical address of the newly assigned physical address
+uint32_t allocate_page(void *virt_addr, uint32_t flags) {
     // tries to get a physical page to use
-    void *phys_addr = get_free_page();
+    uint32_t phys_addr = get_free_page();
     if (phys_addr == NULL) {
         print("ERROR: no mem for free page", IO_OUTPUT_SERIAL);
         while(1);
@@ -260,28 +266,32 @@ void allocate_page(void *virt_addr, uint32_t flags) {
     // if so we need to generate one
     } else if (pd[pd_index] == 0) {
         // make a new page table and set up its entry in the pd
-        generate_page_table(virt_addr, flags);
+        // set up with most permissive flags, as less permissive ones
+        // will override any options below
+        generate_page_table(virt_addr, USER_ACCESS | READ_WRITE | PRESENT);
     }
     // now we know a pde exists for this segment of virt memory
     // and it points to reserved space for a pt
 
     // check if there is no existing pte at this location
     if (pt[pt_index] == 0) {
-        // set as read/write and present, and user access
-        pt[pt_index] = ((uint32_t) phys_addr) & ~0xFFF | flags;
+        // set up according to desired flags
+        pt[pt_index] = (phys_addr & ~0xFFF) | flags;
     } else {
         print("ERROR: page of virt_addr was not free", IO_OUTPUT_SERIAL);
     }
 
     // now invalidate the tlb for this page
     invalidate_tlb(virt_addr);
+
+    return phys_addr;
 }
 
 #ifdef DEBUG
 #include "stdio.h"
 
 void print_free_memory(void) {
-    free_mem_segment_t *curr_seg = first_free_segment;
+    mem_segment_t *curr_seg = first_free_segment;
     while (curr_seg != NULL) {
         printf("%X", curr_seg->addr);
         printf("%X", curr_seg->addr + curr_seg->size);
