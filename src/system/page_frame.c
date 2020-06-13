@@ -241,15 +241,9 @@ void generate_page_table(void *virt_addr, uint32_t flags) {
 }
 
 // allocates a physical page to the virtual page that corresponds with
-// the given virtual address
+// the given virtual address, will overwrite old mapping
 // return the physical address of the newly assigned physical address
-uint32_t allocate_page(void *virt_addr, uint32_t flags) {
-    // tries to get a physical page to use
-    uint32_t phys_addr = get_free_page();
-    if (phys_addr == NULL) {
-        print("ERROR: no mem for free page", IO_OUTPUT_SERIAL);
-        while(1);
-    }
+uint32_t allocate_page(void *virt_addr, uint32_t phys_addr, uint32_t flags) {
     
     uint32_t pd_index = (uint32_t) virt_addr >> 22;
     // pd is mapped to itself in the last virtual page
@@ -273,13 +267,7 @@ uint32_t allocate_page(void *virt_addr, uint32_t flags) {
     // now we know a pde exists for this segment of virt memory
     // and it points to reserved space for a pt
 
-    // check if there is no existing pte at this location
-    if (pt[pt_index] == 0) {
-        // set up according to desired flags
-        pt[pt_index] = (phys_addr & ~0xFFF) | flags;
-    } else {
-        print("ERROR: page of virt_addr was not free", IO_OUTPUT_SERIAL);
-    }
+    pt[pt_index] = (phys_addr & ~0xFFF) | flags;
 
     // now invalidate the tlb for this page
     invalidate_tlb(virt_addr);

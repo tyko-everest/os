@@ -58,6 +58,10 @@ size_t strlen(const char *str) {
 }
 
 char *strchr(const char *str, int c) {
+    if (str == NULL) {
+        return NULL;
+    }
+    
     char *cur_char = str;
     while (*cur_char != NULL) {
         if (*cur_char == c) {
@@ -82,9 +86,9 @@ char *strtok(char *str, const char *delim) {
         }
     }
     char *ret = token;
-    if (*ret == 0) {
-        ret = NULL;
-    }
+    // if (*ret == 0) {
+    //     ret = NULL;
+    // }
 
     // get first delim character
     token = strchr(token, *delim);

@@ -11,6 +11,7 @@
 #include "stddef.h"
 #include "string.h"
 #include "stdio.h"
+#include "system/kheap.h"
 
 #include "ata.h"
 
@@ -196,7 +197,10 @@ void fs_setup_blank_dir(uint32_t blank_num, const fs_inode_t *blank_inode,
 uint32_t fs_get_block_id(uint32_t block_index, const fs_inode_t *inode);
 // sets the desired part of the block pointer structure to the desired block id
 int fs_set_block_id(uint32_t block_id, uint32_t block_index, fs_inode_t *inode);
-uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode);
+
+// given a path it returns the inode number and inode struct
+// returns 0 if the file does not exist
+uint32_t fs_path_to_inode(const char *path, fs_inode_t *ret_inode);
 
 
 // file system operation functions
@@ -204,6 +208,8 @@ uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode);
 void fs_ls(const fs_inode_t *dir_inode);
 
 // given a file name, and directory inode, returns the inode num and struct
+// TODO, this may not need to exist, only used by shell because it keeps track
+// of working dirs inode
 uint32_t fs_get_file(const char *name, const fs_inode_t *dir_inode,
     fs_inode_t *ret_inode);
 
@@ -216,12 +222,10 @@ int fs_rmfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode);
 
 // read num blocks starting at start of the specified file
 // return number of blocks read, or -1 if error
-int fs_readfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
-    uint32_t start, uint32_t num, uint8_t *buf);
+int fs_readfile(const char *path, uint32_t start, uint32_t num, uint8_t *buf);
 
 // write num blocks starting at start of the specified file
 // return number of blocks read, or -1 if error
-int fs_writefile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
-    uint32_t start, uint32_t num, uint8_t *buf);
+int fs_writefile(const char *path, uint32_t start, uint32_t num, uint8_t *buf);
 
 #endif // INCLUDE_FILE_SYSTEM_H

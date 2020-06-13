@@ -130,6 +130,17 @@ enter_user_mode:
     push 0                  ; eip for user program
     iret
 
+global call_iret
+call_iret:
+    ; setup ds, hardcoded for user mode right now
+    mov ax, 0x20 | 0x03
+    mov ds, ax
+
+    ; cpu_state_t struct has error code on it, can't stay on stack
+    ; TODO find out why had to back up two values on the stack
+    add esp, 8 
+    iret
+
 global syscall_test
 syscall_test:
     int 0x80

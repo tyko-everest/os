@@ -25,7 +25,7 @@ void write_block(uint32_t block_id, uint8_t *buf) {
 FILE *fp;
 
 void setup_fp() {
-    fp = fopen("../disk.img", "r+");
+    fp = fopen("/home/tyko/devel/os/disk.img", "r+");
 }
 
 void read_block(uint32_t block_id, uint8_t *buf) {
@@ -277,6 +277,7 @@ void fs_ls(const fs_inode_t *dir_inode) {
 }
 
 // try to find the specified file in the specified directory
+// returns the inode number and inode struct, or 0 and NULL if not found
 uint32_t fs_get_file(const char *name, const fs_inode_t *dir_inode,
     fs_inode_t *ret_inode) {
 
@@ -293,6 +294,7 @@ uint32_t fs_get_file(const char *name, const fs_inode_t *dir_inode,
         fs_dir_entry_t *entry = (fs_dir_entry_t *) (buf + i);
         // is this the last entry
         if (entry->inode == 0) {
+            ret_inode = NULL;
             return 0;
         // if not check to see if name matches
         } else if (entry->name_len == strlen(name) &&
@@ -309,25 +311,39 @@ uint32_t fs_get_file(const char *name, const fs_inode_t *dir_inode,
     }
 }
 
-// takes an absolute path to a directory and returns its inode
-uint32_t fs_path_to_inode(char *dir, fs_inode_t *ret_inode) {
+// takes an absolute path and returns the inode number of the file
+// or 0 and NULL if it does not exist
+uint32_t fs_path_to_inode(const char *path, fs_inode_t *ret_inode) {
+
+    // make copy of path as strtok modifies it
+    char *path_cpy = kmalloc(strlen(path));
+    if (path_cpy == NULL) {
+        while(1);
+    }
+    memcpy(path_cpy, path, strlen(path) + 1);
+
     // set the initial value to the root inode
-    fs_inode_t dir_inode = fs_get_inode(UXT_ROOT_INO);
+    fs_inode_t inode = fs_get_inode(UXT_ROOT_INO);
     // setup return vals in case it is the root inode
     uint32_t inode_num = UXT_ROOT_INO;
-    *ret_inode = dir_inode;
+    *ret_inode = inode;
     
     // get the initial token
-    char *sub_dir = strtok(dir, "/");
+    char *sub_dir = strtok(path_cpy, "/");
     // iterate through the whole path
     while (sub_dir != NULL) {
-        inode_num = fs_get_file(sub_dir, &dir_inode, &dir_inode);
+        inode_num = fs_get_file(sub_dir, &inode, &inode);
         // if the specified sub dir was not found, this dir doesn't exist
         if (inode_num == 0) {
+            kfree(path_cpy);
+            ret_inode = NULL;
             return 0;
         }
         sub_dir = strtok(NULL, "/");
     }
+    // if we made it through the loop, this last element in the desired file
+    kfree(path_cpy);
+    *ret_inode = inode;
     return inode_num;
 }
 
@@ -423,14 +439,13 @@ int fs_mkfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
 }
 
 int fs_rmfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode) {
-
+    while(1);
 }
 
-int fs_readfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
-    uint32_t start, uint32_t num, uint8_t *buf) {
+int fs_readfile(const char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     
     fs_inode_t inode;
-    uint32_t inum = fs_get_file(name, dir_inode, &inode);
+    uint32_t inum = fs_path_to_inode(path, &inode);
 
     if (inum == 0) {
         return -1;
@@ -444,11 +459,10 @@ int fs_readfile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
     return blocks_read;
 }
 
-int fs_writefile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode,
-    uint32_t start, uint32_t num, uint8_t *buf) {
+int fs_writefile(const char *path, uint32_t start, uint32_t num, uint8_t *buf) {
 
     fs_inode_t inode;
-    uint32_t inum = fs_get_file(name, dir_inode, &inode);
+    uint32_t inum = fs_path_to_inode(path, &inode);
 
     if (inum == 0) {
         return -1;
@@ -459,7 +473,7 @@ int fs_writefile(const char *name, uint32_t dir_num, const fs_inode_t *dir_inode
         // if index equals block count, block has yet to be assigned
         if (i == inode.blocks_count) {
             fs_block_desc_t bgd;
-            uint32_t bgd_num = fs_load_bgd(dir_num, &bgd);
+            uint32_t bgd_num = fs_load_bgd(inum, &bgd);
             int32_t first_free = fs_find_free(bgd.block_bitmap);
             // for now fail if cannot find one in this group
             if (first_free == -1) {

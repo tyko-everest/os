@@ -35,7 +35,7 @@ uint32_t get_phys_addr(void* virt_addr);
 void init_free_memory(multiboot_info_t* mbt);
 uint32_t get_free_page(void);
 void generate_page_table(void *virt_addr, uint32_t flags);
-uint32_t allocate_page(void *virt_addr, uint32_t flags);
+uint32_t allocate_page(void *virt_addr, uint32_t phys_addr, uint32_t flags);
 
 
 #ifdef DEBUG

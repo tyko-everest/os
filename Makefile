@@ -17,6 +17,7 @@ C_FILES := kmain.c \
 	drivers/ata.c \
 	utils/print.c \
 	utils/shell.c \
+	utils/elf.c \
 	system/gdt.c \
 	system/interrupts.c \
 	system/kheap.c \
