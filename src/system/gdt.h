@@ -1,8 +1,8 @@
 #ifndef INCLUDE_GDT_H
 #define INCLUDE_GDT_H
 
-#include "print.h"
-#include "stdint.h"
+#include "utils/print.h"
+#include "clib/stdint.h"
 
 #define GDT_SIZE 6
 

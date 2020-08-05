@@ -9,7 +9,7 @@
 #define KHEAP_SIZE 4096
 
 struct kernel_heap_segment_meta {
-    size_t size;
+    uint32_t size;
     bool free;
     struct kernel_heap_segment_meta *next; 
 };

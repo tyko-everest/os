@@ -1,5 +1,7 @@
 #include "system/proc.h"
 
+static process_t curr_proc;
+
 void proc_load(const char *path, process_t *proc) {
     elf32_header_t elf_header;
     elf32_prog_header_t prog_header[2];

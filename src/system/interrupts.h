@@ -56,6 +56,10 @@ typedef struct __attribute__((packed)) {
     unsigned int ds;
 } stack_state_t;
 
+// TODO figure out better way to break circulary dependency
+// currently syscall.h needs proc.h which needs stack_state_t
+#include "system/syscall.h"
+
 typedef struct __attribute__((packed)) {
     unsigned int error_code;
     unsigned int eip;

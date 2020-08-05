@@ -1,8 +1,8 @@
 #ifndef INCLUDE_IO_H
 #define INCLUDE_IO_H
 
-#include "serial.h"
-#include "framebuffer.h"
+#include "drivers/serial.h"
+#include "drivers/framebuffer.h"
 
 typedef enum {
     IO_OUTPUT_FB = 0,

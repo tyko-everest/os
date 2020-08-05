@@ -19,6 +19,8 @@ typedef struct {
     uint32_t pid;
     proc_mem_seg_t *mem;
     stack_state_t registers;
+    // inode of the program's current working directory
+    uint32_t cwd;
 
 } process_t;
 

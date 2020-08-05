@@ -23,6 +23,13 @@ common_interrupt_handler:
     push ds
     pushad
 
+    ; set segments to ring 0
+    mov ax, 0x20 | 0x03
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
     ; we need to determine if this has been an interprivilege interrupt
     ; get old cs from stack
     mov eax, [esp + 12*4] ; skip 9 registers + err code + isr# + eip
@@ -120,9 +127,9 @@ global enter_user_mode
 enter_user_mode:
     mov ax, 0x20 | 0x03
     mov ds, ax
-    ; mov es, ax
-    ; mov fs, ax
-    ; mov gs, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
     push 0x20 | 0x3         ; stack segment for user data, and ring 3
     push 0xC0000000 - 4     ; base stack address
     push 0                  ; eflags register
@@ -135,9 +142,11 @@ call_iret:
     ; setup ds, hardcoded for user mode right now
     mov ax, 0x20 | 0x03
     mov ds, ax
-
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
     ; cpu_state_t struct has error code on it, can't stay on stack
-    ; TODO find out why had to back up two values on the stack
+    ; TODO find out why had to back up two values on the stack not one
     add esp, 8 
     iret
 

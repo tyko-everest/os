@@ -103,6 +103,7 @@ void interrupt_handler(bool inter_privilege, stack_state_t stack,
 
         case INT_SYSCALL:
             print("syscall", IO_OUTPUT_FB);
+            syscall_handler(stack.eax, stack.ebx, stack.ecx, stack.edx);
             break;
 
         default:
