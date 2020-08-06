@@ -1,6 +1,7 @@
 %macro no_error_code_interrupt_handler 1
 global interrupt_handler_%1
 interrupt_handler_%1:
+    cli
     push dword 0                    ; push 0 as error code
     push dword %1                   ; push interrupt number
     jmp common_interrupt_handler    ; jump to common handler
@@ -9,6 +10,7 @@ interrupt_handler_%1:
 %macro error_code_interrupt_handler 1
 global interrupt_handler_%1
 interrupt_handler_%1:
+    cli
     push dword %1                   ; push interrupt number
     jmp common_interrupt_handler    ; jump to common handler
 %endmacro
@@ -23,13 +25,6 @@ common_interrupt_handler:
     push ds
     pushad
 
-    ; set segments to ring 0
-    mov ax, 0x20 | 0x03
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-
     ; we need to determine if this has been an interprivilege interrupt
     ; get old cs from stack
     mov eax, [esp + 12*4] ; skip 9 registers + err code + isr# + eip
@@ -41,13 +36,29 @@ common_interrupt_handler:
     push 0
     jmp done_privil_cmp
 inter_privil:
+    ; set segments to ring 0
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
     push 1
 done_privil_cmp:
 
     ; call c function to handle the rest
     call interrupt_handler
-    ; remove the the inter_privilege bool
-    add esp, 4
+
+    ; restore segments to old values if this was interprivilege
+    pop eax
+    cmp eax, 1
+    jne not_inter_privil
+    ; set segments to ring 3
+    mov ax, 0x20 | 0x03
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+not_inter_privil:
     ; restore the registers
     popad
     pop ds
@@ -136,21 +147,3 @@ enter_user_mode:
     push 0x18 | 0x3         ; code segment for user, and ring 3
     push 0                  ; eip for user program
     iret
-
-global call_iret
-call_iret:
-    ; setup ds, hardcoded for user mode right now
-    mov ax, 0x20 | 0x03
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    ; cpu_state_t struct has error code on it, can't stay on stack
-    ; TODO find out why had to back up two values on the stack not one
-    add esp, 8 
-    iret
-
-global syscall_test
-syscall_test:
-    int 0x80
-    ret

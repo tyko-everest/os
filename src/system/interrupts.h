@@ -75,14 +75,9 @@ typedef struct __attribute__((packed)) {
 void enable_interrupts(void);
 void disable_interrupts(void);
 
-// setup cpu_state and then call to start a program
-void call_iret(cpu_state_t cpu_state);
-
 // enters code stored at address 0x0, for testing
 // all memory must be setup before hand
 void enter_user_mode(void);
-
-void syscall_test(void);
 
 // system interrupts
 void interrupt_handler_0(void);

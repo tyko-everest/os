@@ -102,12 +102,12 @@ void interrupt_handler(bool inter_privilege, stack_state_t stack,
             break;
 
         case INT_SYSCALL:
-            print("syscall", IO_OUTPUT_FB);
+            print("syscall\n", IO_OUTPUT_FB);
             syscall_handler(stack.eax, stack.ebx, stack.ecx, stack.edx);
             break;
 
         default:
-            print("unhandled interrupt", IO_OUTPUT_FB);
+            print("unhandled interrupt\n", IO_OUTPUT_FB);
             while(1);
             break;
     }

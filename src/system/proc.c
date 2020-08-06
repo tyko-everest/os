@@ -65,11 +65,14 @@ void proc_load(const char *path, process_t *proc) {
 
     // user data
     proc->registers.ds = 0x20;
+    proc->registers.esp = 0xC0000000 - 4;
+    proc->registers.ebp = 0xC0000000 - 4;
     // rest of registers don't need to be initialized to anything in particular
     
 }
 
 void proc_start(const process_t *proc) {
+    // load program and data memory
     proc_mem_seg_t *cur_seg = proc->mem;
     while (cur_seg != NULL) {
         uint32_t flags = USER_ACCESS | READ_WRITE | PRESENT;
@@ -79,6 +82,16 @@ void proc_start(const process_t *proc) {
 
         cur_seg = cur_seg->next;
     }
+
+    // load in stack
+    uint32_t phys_stack = get_free_page();
+    if (phys_stack == 0)
+        // error
+        while(1);
+    // load the stack TODO, decide where this is best put
+    uint32_t flags = USER_ACCESS | READ_WRITE | PRESENT;
+    // temporarily using the first page to copy this data
+    allocate_page(0xC0000000 - 0x1000, phys_stack, flags);
 
     // TODO, this will set the registers back to their previous values
 
@@ -90,7 +103,7 @@ void proc_start(const process_t *proc) {
     cpu_state.esp = 0xC0000000 - 4;
     cpu_state.ss = 0x20 | 0x03;
 
-    call_iret(cpu_state);
+    enter_user_mode();
 
 }
 
