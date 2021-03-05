@@ -525,24 +525,29 @@ void kmain(multiboot_info_t* mbt, uint32_t magic, uint32_t kernel_stack_base) {
     kheap_init();
     // find what physical memory is free
     init_free_memory(mbt);
-    // setup file system
-    fs_init();
-    shell_init();
 
-    static uint8_t buf[1024 * 4];
 
-    // fs_mkfile("ELF", UXT_ROOT_INO, &root_inode, UXT_FREG, 0, 0);
-    fs_inode_t root_inode = fs_get_inode(1);
-    fs_ls(&root_inode);
-    fs_writefile("/ELF", 0, 6, user_elf);
+    // for (int i = 0; i < 100; i++)
+    sys_print("testing...");
 
-    process_t proc;
-    proc_load("/ELF", &proc);
+    // // setup file system
+    // fs_init();
+    // shell_init();
 
-    proc_start(&proc);
+    // static uint8_t buf[1024 * 4];
+
+    // // fs_mkfile("ELF", UXT_ROOT_INO, &root_inode, UXT_FREG, 0, 0);
+    // fs_inode_t root_inode = fs_get_inode(1);
+    // fs_ls(&root_inode);
+    // fs_writefile("/ELF", 0, 6, user_elf);
+
+    // process_t proc;
+    // proc_load("/ELF", &proc);
+
+    // proc_start(&proc);
     
 
-    int i = 'h';
+    // int i = 'h';
 
 
 

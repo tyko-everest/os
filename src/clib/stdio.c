@@ -37,7 +37,7 @@ int printf(const char *format, ...) {
                 }
             } else if (*c == 'd' || *c == 'i') {
 
-            } else if (*c == 'X') {
+            } else if (*c == 'x' || *c == 'X') {
                 uint32_t num = va_arg(ap, uint32_t);
                 puts("0x");
                 for (int i = 7; i >= 0; i--) {
@@ -66,7 +66,6 @@ int printf(const char *format, ...) {
                     }
                     putchar(hex_digit);
                 }
-                puts("\n");
                 c++;
             } else if (*c == 's') {
                 puts(va_arg(ap, char *));
@@ -96,11 +95,11 @@ int scanf(const char *format, ...) {
                 char *s = va_arg(ap, char *);
                 unsigned int s_index = 0;
                 // grab a character from the kb buffer
-                char c_buf = kb_read_buf();
+                char c_buf = kbd_read_buf();
                 // either of these indicate the end of the string
                 while (!(c_buf == 0 || c_buf == ' ' || c_buf == '\n')) {
                     s[s_index] = c_buf;
-                    c_buf = kb_read_buf();
+                    c_buf = kbd_read_buf();
                     s_index++;
                 }
                 // when finished, add the null character

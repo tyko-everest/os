@@ -1,109 +1,104 @@
 #include "keyboard.h"
 
-unsigned char read_scan_code(void) {
-    return inb(KBD_DATA_PORT);
+static const char base_map[KBD_CODE_LAST + 1] = {
+      -1,0x1b, '1', '2', '3', '4', '5', '6', // 00 - 07
+     '7', '8', '9', '0', '-', '=','\b','\t', // 08 - 0F
+     'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', // 10 - 17
+     'o', 'p', '[', ']','\n',  -1, 'a', 's', // 18 - 1F
+     'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', // 20 - 27
+    '\'', '`',  -1,'\\', 'z', 'x', 'c', 'v', // 28 - 2F
+     'b', 'n', 'm', ',', '.', '/',  -1,  -1, // 30 - 37
+      -1, ' '
+};
+
+static const char shift_map[KBD_CODE_LAST + 1] = {
+      -1,0x1b, '!', '@', '#', '$', '%', '^', // 00 - 07
+     '&', '*', '(', ')', '_', '+','\b','\t', // 08 - 0F
+     'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', // 10 - 17
+     'O', 'P', '{', '}','\n',  -1, 'A', 'S', // 18 - 1F
+     'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', // 20 - 27
+    '\"', '~',  -1, '|', 'Z', 'X', 'C', 'V', // 28 - 2F
+     'B', 'N', 'M', '<', '>', '?',  -1,  -1, // 30 - 37
+      -1, ' '
+};
+
+enum kbd_mod state = KBD_MOD_NONE;
+
+void keyboard_int(void) {
+
+    unsigned char scan_code = inb(KBD_DATA_PORT);
+
+    printf("Scan code: %X\n", scan_code);
+    
+    switch (scan_code) {
+    case KBD_CODE_CTRL:
+        state = KBD_MOD_CTRL;
+        break;
+
+    case KBD_CODE_SHIFT:
+        state = KBD_MOD_SHIFT;
+        break;
+    
+    case KBD_CODE_ALT:
+        state = KBD_MOD_ALT;
+        break;
+
+    default:
+        // doesn't support scan codes above this number
+        if (scan_code > KBD_CODE_LAST) {
+            return;
+        }
+
+        char c = -1;
+        switch (state) {
+        case KBD_MOD_CTRL:
+            c = base_map[scan_code];
+            if (c >= 'a' && c <= 'z') {
+                c -= 'a' - 'A';
+            }
+            if (c >= '@' && c <= '_') {
+                kbd_write_buf(c - '@');
+            }
+            break;
+        
+        case KBD_MOD_SHIFT:
+            c = shift_map[scan_code];
+            if (c != -1) {
+                kbd_write_buf(c);
+            }
+            break;
+
+        case KBD_MOD_ALT:
+            c = base_map[scan_code];
+            if (c != -1) {
+                kbd_write_buf('\e');
+                kbd_write_buf(c);
+            }
+            break;
+
+        default:
+            c = base_map[scan_code];
+            if (c != -1) {
+                kbd_write_buf(c);
+            }
+            break;
+        }
+
+        state = KBD_MOD_NONE;
+        break;
+    }
+
+    char test = kbd_read_buf();
+    printf("Output: ");
+    while (test != 0) {
+        printf("%x, ", test);
+        test = kbd_read_buf();
+    }
+    printf("\n");
+
 }
 
-char get_key(void) {
-    unsigned char scan_code = read_scan_code();
-    char c;
-    switch (scan_code) {
-    case KEY_Q:
-        c = 'Q';
-        break;
-    case KEY_W:
-        c = 'W';
-        break;
-    case KEY_E:
-        c = 'E';
-        break;
-    case KEY_R:
-        c = 'R';
-        break;
-    case KEY_T:
-        c = 'T';
-        break;
-    case KEY_Y:
-        c = 'Y';
-        break;
-    case KEY_U:
-        c = 'U';
-        break;
-    case KEY_I:
-        c = 'I';
-        break;
-    case KEY_O:
-        c = 'O';
-        break;
-    case KEY_P:
-        c = 'P';
-        break;
-    case KEY_A:
-        c = 'A';
-        break;
-    case KEY_S:
-        c = 'S';
-        break;
-    case KEY_D:
-        c = 'D';
-        break;
-    case KEY_F:
-        c = 'F';
-        break;
-    case KEY_G:
-        c = 'G';
-        break;
-    case KEY_H:
-        c = 'H';
-        break;
-    case KEY_J:
-        c = 'J';
-        break;
-    case KEY_K:
-        c = 'K';
-        break;
-    case KEY_L:
-        c = 'L';
-        break;
-    case KEY_Z:
-        c = 'Z';
-        break;
-    case KEY_X:
-        c = 'X';
-        break;
-    case KEY_C:
-        c = 'C';
-        break;
-    case KEY_V:
-        c = 'V';
-        break;
-    case KEY_B:
-        c = 'B';
-        break;
-    case KEY_N:
-        c = 'N';
-        break;
-    case KEY_M:
-        c = 'M';
-        break;
-    case KEY_PERIOD:
-        c = '.';
-        break;
-    case KEY_ENTER:
-        c = '\n';
-        break;
-    case KEY_SPACE:
-        c = ' ';
-        break;
-    default:
-        c = 0;
-        break;
-    }
-    if (c != 0) {
-        kb_write_buf(c);
-    }
-    return c;
-}
+
 
 static char kb_buf[KB_BUF_SIZE];
 // number of items currently in the keyboard buffer
@@ -113,7 +108,7 @@ static unsigned int kb_buf_num = 0;
 static unsigned int kb_buf_start = KB_BUF_SIZE;
 static unsigned int kb_buf_end = KB_BUF_SIZE;
 
-char kb_read_buf() {
+char kbd_read_buf() {
     if (kb_buf_num == 0) {
         return 0;
     } else {
@@ -127,7 +122,7 @@ char kb_read_buf() {
     }
 }
 
-int kb_write_buf(char c) {
+int kbd_write_buf(char c) {
     if (kb_buf_num == KB_BUF_SIZE) {
         return -1;
     } else {

@@ -90,14 +90,8 @@ void interrupt_handler(bool inter_privilege, stack_state_t stack,
 
     switch (interrupt) {
         case INT_PIC1_KEYBOARD:
-            val_str[0] = get_key();
-            if (val_str[0]) {
-                print(val_str, IO_OUTPUT_FB);
-            }
-            // for now, this will be used to initiate a command
-            if (val_str[0] == '\n') {
-                cmd_entered = 1;
-            }
+            // let the keyboard driver know it should get the next scan code
+            keyboard_int();
             pic_acknowledge(interrupt);
             break;
 

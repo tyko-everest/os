@@ -43,7 +43,7 @@ AS_OBJS := $(AS_OBJS:.s=.o)
 
 OBJS = $(C_OBJS) $(AS_OBJS)
 
-$(info $$OBJS is [${OBJS}])
+# $(info $$OBJS is [${OBJS}])
 
 all: kernel.elf
 
@@ -64,7 +64,13 @@ os.iso: kernel.elf
 				iso
 
 run: os.iso
-	bochs -f bochsrc.txt -q
+	qemu-system-i386 -curses -m 256 -boot d -cdrom os.iso
+
+debug: os.iso
+	qemu-system-i386 -s -S -curses -m 256 -boot d -cdrom os.iso
+
+kill:
+	killall qemu-system-i386
 
 dir_guard=@mkdir -p $(@D)
 
