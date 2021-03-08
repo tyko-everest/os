@@ -22,25 +22,40 @@ static const char shift_map[KBD_CODE_LAST + 1] = {
       -1, ' '
 };
 
-enum kbd_mod state = KBD_MOD_NONE;
+unsigned int state = 0;
 
 void keyboard_int(void) {
 
     unsigned char scan_code = inb(KBD_DATA_PORT);
-
-    printf("Scan code: %X\n", scan_code);
     
     switch (scan_code) {
+    case KBD_CODE_ESC:
+        break;
+
     case KBD_CODE_CTRL:
-        state = KBD_MOD_CTRL;
+        state |= KBD_MOD_CTRL;
         break;
 
     case KBD_CODE_SHIFT:
-        state = KBD_MOD_SHIFT;
+    case KBD_CODE_RSHIFT:
+        state |= KBD_MOD_SHIFT;
         break;
     
     case KBD_CODE_ALT:
-        state = KBD_MOD_ALT;
+        state |= KBD_MOD_ALT;
+        break;
+
+    case KBD_CODE_CTRL | 0x80:
+        state &= ~KBD_MOD_CTRL;
+        break;
+    
+    case KBD_CODE_SHIFT | 0x80:
+    case KBD_CODE_RSHIFT | 0x80:
+        state &= ~KBD_MOD_SHIFT;
+        break;
+
+    case KBD_CODE_ALT | 0x80:
+        state &= ~KBD_MOD_ALT;
         break;
 
     default:
@@ -50,48 +65,41 @@ void keyboard_int(void) {
         }
 
         char c = -1;
-        switch (state) {
-        case KBD_MOD_CTRL:
-            c = base_map[scan_code];
-            if (c >= 'a' && c <= 'z') {
-                c -= 'a' - 'A';
-            }
-            if (c >= '@' && c <= '_') {
-                kbd_write_buf(c - '@');
-            }
-            break;
-        
-        case KBD_MOD_SHIFT:
+        if (state & KBD_MOD_SHIFT) {
             c = shift_map[scan_code];
-            if (c != -1) {
-                kbd_write_buf(c);
-            }
-            break;
-
-        case KBD_MOD_ALT:
+        } else {
             c = base_map[scan_code];
-            if (c != -1) {
-                kbd_write_buf('\e');
-                kbd_write_buf(c);
-            }
-            break;
-
-        default:
-            c = base_map[scan_code];
-            if (c != -1) {
-                kbd_write_buf(c);
-            }
-            break;
         }
 
-        state = KBD_MOD_NONE;
+        if (c != -1) {
+            if (state & KBD_MOD_CTRL) {
+                // allow both capitals and lower case to make the control codes
+                if (c >= 'a' && c <= 'z') {
+                    c -= 'a' - 'A';
+                }
+                // if ends up in 3rd col of ascii table after this, generate code
+                // if not ignore it, invalid combo
+                if (c >= '@' && c <= '_') {
+                    c -= '@';
+                } else {
+                    return;
+                }
+                // now we know a valid control character will be output
+            }
+            // if alt is held down, just need to add an ESC character before
+            if (state & KBD_MOD_ALT) {
+                kbd_write_buf('\e');
+            }
+
+            kbd_write_buf(c);
+        }
         break;
     }
 
     char test = kbd_read_buf();
-    printf("Output: ");
+    printf("Char(s): ");
     while (test != 0) {
-        printf("%x, ", test);
+        printf("%c, ", test);
         test = kbd_read_buf();
     }
     printf("\n");
@@ -122,7 +130,7 @@ char kbd_read_buf() {
     }
 }
 
-int kbd_write_buf(char c) {
+static int kbd_write_buf(char c) {
     if (kb_buf_num == KB_BUF_SIZE) {
         return -1;
     } else {

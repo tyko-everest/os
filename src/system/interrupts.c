@@ -96,12 +96,12 @@ void interrupt_handler(bool inter_privilege, stack_state_t stack,
             break;
 
         case INT_SYSCALL:
-            print("syscall\n", IO_OUTPUT_FB);
+            printf("syscall\n");
             syscall_handler(stack.eax, stack.ebx, stack.ecx, stack.edx);
             break;
 
         default:
-            print("unhandled interrupt\n", IO_OUTPUT_FB);
+            printf("unhandled interrupt: %x\n", interrupt);
             while(1);
             break;
     }

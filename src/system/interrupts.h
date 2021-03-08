@@ -4,8 +4,9 @@
 #include "stdbool.h"
 #include "port.h"
 #include "keyboard.h"
-#include "print.h"
 #include "shell.h"
+
+#include "clib/stdio.h"
 
 #define NUM_INTERRUPTS 256
 

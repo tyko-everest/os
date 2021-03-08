@@ -7,6 +7,8 @@
 #include "keyboard.h"
 #include "print.h"
 
+#define EOF (-1)
+
 int putchar(int c);
 int puts(const char *str);
 int printf(const char *format, ...);

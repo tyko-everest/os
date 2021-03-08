@@ -7,6 +7,16 @@ LDFLAGS := -T link.ld -melf_i386
 AS := nasm
 ASFLAGS := -f elf -F dwarf -g
 
+# setup hdd on ide primary bus master
+# setup boot cd on ide primary bus slave
+# boot from the cd
+QEMU_FLAGS := -curses -m 256 \
+	-drive file=disk.img,if=none,format=raw,id=hdd \
+	-device ide-hd,drive=hdd,bus=ide.0,unit=0 \
+	-drive file=os.iso,if=none,id=bootcd \
+	-device ide-cd,drive=bootcd,bus=ide.0,unit=1 \
+	-boot d 
+
 SRC_DIR := ./src/
 BUILD_DIR := ./build/
 
@@ -64,10 +74,10 @@ os.iso: kernel.elf
 				iso
 
 run: os.iso
-	qemu-system-i386 -curses -m 256 -boot d -cdrom os.iso
+	qemu-system-i386 $(QEMU_FLAGS)
 
 debug: os.iso
-	qemu-system-i386 -s -S -curses -m 256 -boot d -cdrom os.iso
+	qemu-system-i386 -s -S $(QEMU_FLAGS)
 
 kill:
 	killall qemu-system-i386

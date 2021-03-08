@@ -1,7 +1,9 @@
 #include "stdio.h"
 
 int putchar(int c) {
-    print(&c, IO_OUTPUT_FB);
+    static char *buf = " ";
+    buf[0] = c; 
+    print(buf, IO_OUTPUT_FB);
 }
 
 int puts(const char *str) {
@@ -16,7 +18,7 @@ int printf(const char *format, ...) {
     va_list ap;
     va_start(ap, format);
 
-    char *c = format;
+    const char *c = format;
     while (*c != NULL) {
         if (*c == '%') {
             c++;
@@ -36,10 +38,36 @@ int printf(const char *format, ...) {
                     }
                 }
             } else if (*c == 'd' || *c == 'i') {
+                // int32_t num = va_arg(ap, int32_t);
+                // if (num == 0) {
+                //     putchar('0');
+                //     tot_chars++;
+                // } else {
+                //     if (num < 0) {
+                //         while (num < 0) {
+                //             putchar((num % -10) + '0');
+                //             tot_chars++;
+                //             num /= 10;
+                //         }
+                //     } else {
+                //         while (num > 0) {
+                //             putchar((num % 10) + '0');
+                //             tot_chars++;
+                //             num /= 10;
+                //         }
+                //     }
+                // }
+                // c++;
+
+            } else if (*c == 'c') {
+                putchar(va_arg(ap, int));
+                tot_chars++;
+                c++;
 
             } else if (*c == 'x' || *c == 'X') {
                 uint32_t num = va_arg(ap, uint32_t);
                 puts("0x");
+                tot_chars += 2;
                 for (int i = 7; i >= 0; i--) {
                     char hex_digit = (char) (((num >> (4 * i)) & 0xF ) + 0x30U);
                     switch (hex_digit) {
@@ -65,10 +93,13 @@ int printf(const char *format, ...) {
                         break;
                     }
                     putchar(hex_digit);
+                    tot_chars++;
                 }
                 c++;
             } else if (*c == 's') {
-                puts(va_arg(ap, char *));
+                char *str = va_arg(ap, char *);
+                puts(str);
+                tot_chars += strlen(str);
                 c++;
             }
 
@@ -86,7 +117,7 @@ int scanf(const char *format, ...) {
     va_list ap;
     va_start(ap, format);
 
-    char *c = format;
+    const char *c = format;
     while (*c != NULL) {
         if (*c == '%') {
             c++;
