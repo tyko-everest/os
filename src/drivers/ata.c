@@ -70,6 +70,9 @@ void ata_pio_read(ata_num_t num, ata_type_t type, uint32_t address,
 
         // poll until the data is ready
         while (1) {
+            for (int i = 0; i < 4; i++) {
+                inb(ATA_ALT_STATUS_REG(ata_base));
+            }
             uint8_t status = inb(ATA_STATUS_REG(ata_base));
             // uint8_t error = inb(ATA_ERROR_REG(ata_base));
             status &= ATA_STATUS_REG_BSY_MSK | ATA_STATUS_REG_DRQ_MSK;
@@ -82,6 +85,10 @@ void ata_pio_read(ata_num_t num, ata_type_t type, uint32_t address,
         for (uint32_t word_num = 0; word_num < ATA_BLOCK_SIZE / 2; word_num++) {
             buffer[buffer_index] = inw(ATA_DATA_REG(ata_base));
             buffer_index++;
+        }
+
+        for (int i = 0; i < 4; i++) {
+            inb(ATA_ALT_STATUS_REG(ata_base));
         }
         
     }

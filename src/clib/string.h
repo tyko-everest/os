@@ -14,5 +14,6 @@ int memcmp(const void *str1, const void *str2, size_t n);
 size_t strlen(const char *str);
 char *strchr(const char *str, int c);
 char *strtok(char *str, const char *delim);
+int strcmp (const char* str1, const char* str2);
 
 #endif // INCLUDE_STRING_H

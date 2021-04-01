@@ -79,8 +79,6 @@ void interrupts_init() {
 
 }
 
-extern int cmd_entered;
-
 void interrupt_handler(bool inter_privilege, stack_state_t stack, 
         unsigned int interrupt, cpu_state_t cpu) {
     

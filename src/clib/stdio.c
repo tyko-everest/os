@@ -1,5 +1,17 @@
 #include "stdio.h"
 
+static int int2str(int num, int count) {
+    char c;
+    if (num > 10) {
+        int2str(num / 10, num + 1);
+        c = num % 10 + '0';
+    } else {
+        c = num + '0';
+        return count;
+    }
+    printf("%c", c);
+}
+
 int putchar(int c) {
     static char *buf = " ";
     buf[0] = c; 
@@ -38,26 +50,20 @@ int printf(const char *format, ...) {
                     }
                 }
             } else if (*c == 'd' || *c == 'i') {
-                // int32_t num = va_arg(ap, int32_t);
-                // if (num == 0) {
-                //     putchar('0');
-                //     tot_chars++;
-                // } else {
-                //     if (num < 0) {
-                //         while (num < 0) {
-                //             putchar((num % -10) + '0');
-                //             tot_chars++;
-                //             num /= 10;
-                //         }
-                //     } else {
-                //         while (num > 0) {
-                //             putchar((num % 10) + '0');
-                //             tot_chars++;
-                //             num /= 10;
-                //         }
-                //     }
-                // }
-                // c++;
+                int32_t num = va_arg(ap, int32_t);
+                int32_t numcpy = num;
+                int dig = 0;
+                while (numcpy != 0) {
+                    numcpy /= 10;
+                    dig++;
+                }
+                for (int i = dig - 1; i > 0; i--) {
+                    putchar((num / (10 * i)) % 10 + '0');
+                    tot_chars++;
+                }
+                putchar(num % 10 + '0');
+                tot_chars++;
+                c++;
 
             } else if (*c == 'c') {
                 putchar(va_arg(ap, int));

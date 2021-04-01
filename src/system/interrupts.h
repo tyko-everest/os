@@ -4,7 +4,6 @@
 #include "stdbool.h"
 #include "port.h"
 #include "keyboard.h"
-#include "shell.h"
 
 #include "clib/stdio.h"
 

@@ -1,3 +1,16 @@
+/**
+ * The ATA driver
+ * 
+ * Can read and write to a drive connected by PATA via polling PIO mode
+ * It's generally pretty bad, but seems to more or less work for now
+ * 
+ * TODO:
+ * - not have it hardcoded to read from bus 0 master only
+ * - any sort of error checking
+ * - interrupts and DMD
+ * - definitely more
+ */
+
 #ifndef INCLUDE_ATA_H
 #define INCLUDE_ATA_H
 
