@@ -1,6 +1,16 @@
 #include "system/proc.h"
 
-static process_t curr_proc;
+static process_t procs[16];
+static process_t curr_pid;
+
+int add_fd_entry(const char *path) {
+    inode_t inode;
+    uint32_t inum = path_to_inode(path, &inode);
+    if (inum == 0) {
+        while(1);
+    }
+    
+}
 
 void proc_load(const char *path, process_t *proc) {
     elf32_header_t elf_header;

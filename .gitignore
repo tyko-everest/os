@@ -1,6 +1,8 @@
 /build/
 /.vscode/
 /test_program/
+/dtest/
+/raspi/
 *.elf
 *.iso
 *.out
