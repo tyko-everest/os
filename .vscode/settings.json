@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "ustar.h": "c",
+        "ext2.h": "c",
+        "limits": "c",
+        "exception": "c",
+        "new": "c",
+        "*.tcc": "c",
+        "type_traits": "c",
+        "typeinfo": "c"
+    }
+}
