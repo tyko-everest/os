@@ -4,11 +4,13 @@
 /**
  * Basic FAT32 driver that assumes a MBR formatted disk
  * and only reads from the first partition
- * VFS is not supported
+ * - VFS is not supported
+ * - not reentrant
  * 
  * TODO:
  * - ability to handle failure from hardware functions
  * - more descriptive failure than just -1
+ * - testing with sector sizes above 512 bytes
  * - make functions for: writing, making + deleting files and dirs
  * 
  * References:
@@ -31,6 +33,10 @@
 
 #define PATH_DELIM "/"
 
+#define CLUSTER_MASK 0x0FFFFFFF
+#define CLUSTER_LAST 0x0FFFFFFF
+
+// NOTE: only the dir attribute is currently used 
 #define FAT_ATTR_RDONLY     (1 << 0)
 #define FAT_ATTR_HIDDEN     (1 << 1)
 #define FAT_ATTR_SYS        (1 << 2)
@@ -64,14 +70,26 @@ typedef struct {
 } __attribute__((packed)) fat32_vol_id_t;
 
 typedef struct {
-    uint8_t name[11];
+    char name[11];
     uint8_t attrib;
     uint8_t UNUSED1[8];
     uint16_t cluster_high;
     uint8_t UNUSED2[4];
     uint16_t cluster_low;
     uint32_t size;
-} __attribute__((packed)) fat32_dir_t;
+} __attribute__((packed)) fat32_record_t;
+
+/* private */
+typedef struct {
+    // lba of the sector that stores the directory record
+    uint32_t sector;
+    // treating that sector as an array of records, the index 
+    uint32_t index;
+} fat32_record_loc_t;
+
+// how many custer numbers fit within each sector in the FAT
+#define CLUSTER_NUMS_PER_SECTOR (SECTOR_SIZE / sizeof(uint32_t))
+#define RECORDS_PER_SECTOR (SECTOR_SIZE / sizeof(fat32_record_t))
 
 
 /* functions that interface with whatever actually gets the bytes
@@ -97,11 +115,34 @@ void write_sector(uint32_t sector_lba, uint8_t *buf);
 uint32_t cluster_to_lba(uint32_t cluster);
 
 /**
+ * Gets the first free cluster in the FAT
+ * @return the number of the first free cluster
+ * or 0 if none found (since clusters 0 and 1 are invalid)
+ */
+uint32_t get_free_cluster();
+
+/**
  * Follows the cluster chain in the FAT
+ * @param cluster the known cluster
+ * @return the next cluster in the chain, or the end of cluster marker
+ */
+uint32_t get_next_cluster(uint32_t cluster);
+
+/**
+ * Follows the cluster chain in the FAT, but will allocated new clusters
+ * if it hits the end of a chain
  * @param cluster the known cluster
  * @return the next cluster in the chain
  */
-uint32_t get_next_cluster(uint32_t cluster);
+uint32_t get_or_make_next_cluster(uint32_t cluster);
+
+/**
+ * Sets a cluster in the FAT to a value
+ * @param index the index in the FAT you want to change
+ * @param num the cluster number to set at the desired location
+ * @return 0 if successful, -1 if failed
+ */
+int set_cluster(uint32_t index, uint32_t num);
 
 /**
  * Check whether a given file/dir string matches the stored 8.3 one
@@ -116,19 +157,28 @@ bool names_match(const char *file_str, const char *file_83);
  * @param name the name of the file
  * @param dir_cluster the number of the first cluster that stores the directory
  * you want to search in
- * @param ret_dir pointer to a directory entry so it can returned if found
+ * @param ret_rec pointer to a directory record so it can returned if found
+ * @param ret_loc pointer to a location struct so it can easily be modified later if necessary
  * @return 0 on success, -1 on failure if file was not found
  */
-int name_to_dir_entry(const char *name, uint32_t dir_cluster, fat32_dir_t *ret_dir);
+int get_record_in_dir(const char *name, uint32_t dir_cluster, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc);
 
 /**
  * Finds a file given its absolute path
  * @param path the absolute path to the file
- * @param ret_dir pointer to a directory entry so it can returned if found
+ * @param ret_rec pointer to a directory record so it can returned if found
+ * @param ret_loc pointer to a location struct so it can easily be modified later if necessary
  * @return 0 on success, -1 on failure if file was not found
  */
-int path_to_dir_entry(char *path, fat32_dir_t *ret_dir);
+int get_record(char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc);
 
+/**
+ * Sets a directory record on the storage device
+ * @param rec a pointer to the new value for the record
+ * @param rec_loc the location of the record
+ * @return 0 on success, -1 on failure if file was not found
+ */
+int set_record(const fat32_record_t *rec, const fat32_record_loc_t *rec_loc);
 
 /* external functions meant to be used with the rest of the os */
 
@@ -158,6 +208,6 @@ int fat32_readfile(char *path, uint32_t start, uint32_t num, uint8_t *buf);
  * @return the number of bytes written, can be less than requested,
  * or -1 on an error
  */
-int fat32_writefile(const char *path, uint32_t start, uint32_t num, uint8_t *buf);
+int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf);
 
 #endif
