@@ -2,7 +2,7 @@
 /test_program/
 /dtest/
 /raspi/
-/zzz/
+/test_fs/zzz/
 *.elf
 *.iso
 *.out

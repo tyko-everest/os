@@ -4,14 +4,17 @@
 /**
  * Basic FAT32 driver that assumes a MBR formatted disk
  * and only reads from the first partition
- * - VFS is not supported
- * - not reentrant
  * 
  * TODO:
+ * - VFS is not supported
+ * - not reentrant
  * - ability to handle failure from hardware functions
  * - more descriptive failure than just -1
  * - testing with sector sizes above 512 bytes
- * - make functions for: writing, making + deleting files and dirs
+ * - make use of free file records created by deleting files when making new ones
+ * currently it always just goes to the end of the directory and adds a new entry there
+ * - high 4 reserved FAT bits are overwritten on modifications
+ * - directory size is not accurately kept track of
  * 
  * References:
  * https://www.pjrc.com/tech/8051/ide/fat32.html
@@ -31,7 +34,8 @@
 // first partition for MBR
 #define FIRST_PART_OFFSET 446
 
-#define PATH_DELIM "/"
+#define PATH_DELIM_STR "/"
+#define PATH_DELIM_CHR '/'
 
 #define CLUSTER_MASK 0x0FFFFFFF
 #define CLUSTER_LAST 0x0FFFFFFF
@@ -81,7 +85,9 @@ typedef struct {
 
 /* private */
 typedef struct {
-    // lba of the sector that stores the directory record
+    // number of cluster that stores the record
+    uint32_t cluster;
+    // which sector within that cluster (i.e. 0, 1, 2, ...)
     uint32_t sector;
     // treating that sector as an array of records, the index 
     uint32_t index;
@@ -105,6 +111,9 @@ void write_sector(uint32_t sector_lba, uint8_t *buf);
 
 
 /* internal helper function */
+
+// grabs the high and low parts of the cluster and combines them
+uint32_t make_cluster(const fat32_record_t *record);
 
 /**
  * Gets a logical block address for use with the underlying block storage device,
@@ -146,11 +155,19 @@ int set_cluster(uint32_t index, uint32_t num);
 
 /**
  * Check whether a given file/dir string matches the stored 8.3 one
- * @param name the name as a string, i.e. "TEST.TXT"
- * @param stored pointer to the 11 char array that stores the 8.3 file name
+ * @param file_str the name as a string, i.e. "TEST.TXT"
+ * @param file_83 pointer to the 11 char array that stores the 8.3 file name
  * @return true if the names match, false otherwise
  */
 bool names_match(const char *file_str, const char *file_83);
+
+/**
+ * Convert a name that's part of a normal string into an 8.3 format
+ * @param file_str the name as a string, i.e. "TEST.TXT"
+ * @param file_83 pointer to the 11 char array that stores the 8.3 file name
+ * @return 0 on success, -1 if invalid name
+ */
+int name_str_to_83(const char *file_str, char *file_83);
 
 /**
  * Finds a file given a name and the first cluster that stores the directory it's in
@@ -160,6 +177,7 @@ bool names_match(const char *file_str, const char *file_83);
  * @param ret_rec pointer to a directory record so it can returned if found
  * @param ret_loc pointer to a location struct so it can easily be modified later if necessary
  * @return 0 on success, -1 on failure if file was not found
+ * if file not found, the return structs will reference the end of directory record
  */
 int get_record_in_dir(const char *name, uint32_t dir_cluster, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc);
 
@@ -209,5 +227,21 @@ int fat32_readfile(char *path, uint32_t start, uint32_t num, uint8_t *buf);
  * or -1 on an error
  */
 int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf);
+
+/**
+ * Makes a new file at the given path
+ * The preceeding directories must already exist
+ * @param path the absolute path of the new file
+ * @param is_dir true for directory, false for file
+ * @return 0 for success, -1 for failure
+ */
+int fat32_makefile(char *path, bool is_dir);
+
+/**
+ * Deletes a file or directory (if empty) given a path
+ * @param path the absolute path of the new file
+ * @return 0 for success, -1 for failure
+ */
+int fat32_deletefile(char *path);
 
 #endif

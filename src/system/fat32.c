@@ -1,5 +1,7 @@
 #include "fat32.h"
 
+const static fat32_record_t end_record;
+
 static uint8_t read_buf[SECTOR_SIZE];
 static FILE *fd;
 
@@ -11,7 +13,7 @@ static uint32_t secs_per_fat;
 
 
 void setup_sector() {
-    fd = fopen("/home/tyko/os/zzz.img", "r+");
+    fd = fopen("/home/tyko/os/test_fs/zzz.img", "r+");
     // fd = fopen("/mnt/c/Users/Tyko/Downloads/2021-03-04-raspios-buster-armhf-lite.img", "r+");
     if (fd < 0) {
         while(1);
@@ -26,6 +28,10 @@ void read_sector(uint32_t sector_lba, uint8_t *buf) {
 void write_sector(uint32_t sector_lba, uint8_t *buf) {
     fseek(fd, sector_lba * SECTOR_SIZE, SEEK_SET);
     fwrite(buf, 1, SECTOR_SIZE, fd);
+}
+
+uint32_t make_cluster(const fat32_record_t *record) {
+    return (record->cluster_high << 16) | record->cluster_low;
 }
 
 uint32_t cluster_to_lba(uint32_t cluster) {
@@ -56,7 +62,7 @@ uint32_t get_or_make_next_cluster(uint32_t cluster) {
     cluster = get_next_cluster(cluster);
     if ((cluster & CLUSTER_MASK) == CLUSTER_LAST) {
         cluster = get_free_cluster();
-        if (cluster == 0) {
+        if ((cluster & CLUSTER_MASK) == 0) {
             while(1);
         }
         set_cluster(old_cluster, cluster);
@@ -107,6 +113,48 @@ bool names_match(const char *file_str, const char *file_83) {
     return ext_match;
 }
 
+int name_str_to_83(const char *file_str, char *file_83) {
+    // first check if all characters are valid and there is maximum 1 period
+    uint32_t per_cnt = 0;
+    for (int i = 0; i < strlen(file_str); i++) {
+        if (file_str[i] == '.') {
+            per_cnt++;
+            if (per_cnt > 1) {
+                return -1;
+            }
+        } else if (!((file_str[i] >= 'A' && file_str[i] <= 'Z') || (file_str[i] >= '0' && file_str[i] <= '9'))) {
+            return -1;
+        }
+    }
+
+    char *per_ptr = strchr(file_str, '.');
+    uint32_t name_len;
+    uint32_t ext_len = 0;
+    if (per_ptr != NULL) {
+        ext_len = strlen(per_ptr + 1);
+        if (ext_len > 3) {
+            return -1;
+        }
+
+        memcpy(file_83 + 8, per_ptr + 1, ext_len);
+        memset(file_83 + 8 + ext_len, ' ', 3 - ext_len);
+        name_len = per_ptr - file_str;
+    } else {
+        memset(file_83 + 8, ' ', 3);
+        name_len = strlen(file_str);
+    }
+
+    if (name_len == 0 && ext_len == 0) {
+        return -1;
+    }
+    if (name_len > 8) {
+        return -1;
+    }
+
+    memcpy(file_83, file_str, name_len);
+    memset(file_83 + name_len, ' ', 8 - name_len);
+    return 0;
+}
 
 int get_record_in_dir(const char *name, uint32_t dir_cluster, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc) {
     static fat32_record_t buf[SECTOR_SIZE / sizeof(fat32_record_t)];
@@ -122,12 +170,18 @@ int get_record_in_dir(const char *name, uint32_t dir_cluster, fat32_record_t *re
             for (int dir_index = 0; dir_index < SECTOR_SIZE / sizeof(fat32_record_t); dir_index++) {
                 // check if end of directory list had been reached
                 if (buf[dir_index].name[0] == 0) {
+                    memcpy(ret_rec, buf + dir_index, sizeof(fat32_record_t));
+                    ret_loc->index = dir_index;
+                    ret_loc->sector = sector_num;
+                    ret_loc->cluster = dir_cluster;
                     return -1;
                 }
+                // check if we found a match
                 if (names_match(name, buf[dir_index].name)) {
                     memcpy(ret_rec, buf + dir_index, sizeof(fat32_record_t));
                     ret_loc->index = dir_index;
-                    ret_loc->sector = lba;
+                    ret_loc->sector = sector_num;
+                    ret_loc->cluster = dir_cluster;
                     return 0;
                 }
             }
@@ -144,7 +198,7 @@ int get_record(char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc)
     fat32_record_loc_t loc;
 
     bool prev_was_file = false;
-    char *name = strtok(path, PATH_DELIM);
+    char *name = strtok(path, PATH_DELIM_STR);
     // assume path has been checked to not be null
     while (name != NULL) {
         // if a object was found that was a file, but it was not the last part of the path
@@ -154,12 +208,14 @@ int get_record(char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc)
         }
         int res = get_record_in_dir(name, dir_cluster, &rec, &loc);
         if (res < 0) {
+            memcpy(ret_rec, &rec, sizeof(fat32_record_t));
+            memcpy(ret_loc, &loc, sizeof(fat32_record_loc_t));
             return -1;
         } else {
             if (!(rec.attrib & FAT_ATTR_DIR)) {
                 prev_was_file = true;
             }
-            name = strtok(NULL, PATH_DELIM);
+            name = strtok(NULL, PATH_DELIM_STR);
         }
         dir_cluster = (rec.cluster_high << 16) | rec.cluster_low;
     }
@@ -170,9 +226,9 @@ int get_record(char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc)
 
 int set_record(const fat32_record_t *rec, const fat32_record_loc_t *rec_loc) {
     static fat32_record_t buf[SECTOR_SIZE / sizeof(fat32_record_t)];
-    read_sector(rec_loc->sector, (uint8_t*) buf);
+    read_sector(cluster_to_lba(rec_loc->cluster) + rec_loc->sector, (uint8_t*) buf);
     memcpy(buf + rec_loc->index, rec, sizeof(fat32_record_t));
-    write_sector(rec_loc->sector, (uint8_t*) buf);
+    write_sector(cluster_to_lba(rec_loc->cluster) + rec_loc->sector, (uint8_t*) buf);
     return 0;
 }
 
@@ -214,7 +270,7 @@ int fat32_readfile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     num = MIN(num, record.size - start);
 
     // these is simply the first cluster in the file
-    uint32_t cluster = (record.cluster_high << 16) | record.cluster_low;
+    uint32_t cluster = make_cluster(&record);
     // this keeps tracks of which sector within the current cluster
     uint32_t sector = 0;
 
@@ -286,9 +342,9 @@ int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     } 
     
     // this is simply the first cluster in the file
-    uint32_t cluster = (record.cluster_high << 16) | record.cluster_low;
+    uint32_t cluster = make_cluster(&record);
     // if file is empty it will not have a cluster assigned to it yet
-    if (cluster == 0) {
+    if ((cluster & CLUSTER_MASK) == 0) {
         cluster = get_free_cluster();
         record.cluster_high = cluster >> 16;
         record.cluster_low = cluster & 0xFFFF;
@@ -362,4 +418,82 @@ int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
         cluster = get_or_make_next_cluster(cluster);
     }
     return -1;
+}
+
+int fat32_makefile(char *path, bool is_dir) {
+
+    fat32_record_t old_record;
+    fat32_record_loc_t rec_loc;
+    fat32_record_t new_record;
+
+    
+    char *last_slash = strrchr(path, PATH_DELIM_CHR);
+    // see if filename is valid, and save to new_record
+    char *name_str = last_slash + 1;
+    if (name_str_to_83(name_str, new_record.name) == -1) {
+        return -1;
+    }
+
+    // see if directory new file should go in exists
+    *last_slash = 0;
+    if (get_record(path, &old_record, &rec_loc) == -1) {
+        return -1;
+    }
+
+    // see if file exists
+    if (get_record(last_slash + 1, &old_record, &rec_loc) == 0) {
+        return -1;
+    }
+
+    // set up rest of relevant members
+    new_record.size = 0;
+    new_record.attrib = is_dir ? FAT_ATTR_DIR : 0;
+    new_record.cluster_high = 0;
+    new_record.cluster_low = 0;
+
+    // since not found, rec_loc still refers to the empty entry at the end
+    set_record(&new_record, &rec_loc);
+
+    // figure out where the location of the new end marking directory is
+    if (rec_loc.index == RECORDS_PER_SECTOR - 1) {
+        rec_loc.index = 0;
+        if (rec_loc.sector == sectors_per_cluster - 1) {
+            rec_loc.sector = 0;
+            rec_loc.cluster = get_or_make_next_cluster(rec_loc.cluster);
+        } else {
+            rec_loc.sector++;
+        }
+    } else {
+        rec_loc.index++;
+    }
+    
+    set_record(&end_record, &rec_loc);
+
+    return 0;    
+}
+
+int fat32_deletefile(char *path) {
+    fat32_record_t record;
+    fat32_record_loc_t rec_loc;
+    if (get_record(path, &record, &rec_loc) != 0) {
+        return -1;
+    }
+    
+    if (record.attrib & FAT_ATTR_DIR && record.size != 0) {
+        return -1;
+    }
+    // mark as free record
+    record.name[0] = 0xE5;
+    set_record(&record, &rec_loc);
+
+    uint32_t cluster = make_cluster(&record);
+    if (cluster != 0) {
+        while ((cluster & CLUSTER_MASK) != CLUSTER_LAST) {
+            uint32_t old_cluster = cluster;
+            cluster = get_next_cluster(cluster);
+            set_cluster(old_cluster, 0);
+        }
+    }
+
+    return 0;
 }
