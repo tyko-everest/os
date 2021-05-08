@@ -1,10 +1,10 @@
 /build/
 /test_program/
 /dtest/
-/raspi/
 /test_fs/zzz/
 *.elf
 *.iso
 *.out
 *.img*
+*.o
 bochslog.txt
