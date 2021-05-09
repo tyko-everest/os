@@ -1,4 +1,3 @@
 # OS Project
 ***
-Long term to make an desktop, cli, OS from scratch.
-Using NASM and C currently
+Making a simple OS in C that will run on a Raspberry Pi 3B
