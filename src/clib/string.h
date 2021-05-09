@@ -10,10 +10,13 @@ void *memcpy(void *dest, const void *src, size_t n);
 void *memmove(void *dest, const void *src, size_t n);
 void *memset(void *str, int c, size_t n);
 int memcmp(const void *str1, const void *str2, size_t n);
+void *memchr(const void *ptr, int val, size_t n);
 
 size_t strlen(const char *str);
 char *strchr(const char *str, int c);
+char *strrchr(const char *str, int c);
 char *strtok(char *str, const char *delim);
-int strcmp (const char* str1, const char* str2);
+int strcmp (const char *str1, const char *str2);
+size_t strcspn(const char *str1, const char *str2);
 
 #endif // INCLUDE_STRING_H

@@ -1,15 +1,15 @@
 #include "clib/stdint.h"
 #include "clib/string.h"
 #include "system/gdt.h"
-#include "system/interrupts.h"
+// #include "system/interrupts.h"
 #include "system/kheap.h"
 #include "system/page_frame.h"
-#include "system/file_system.h"
-#include "system/proc.h"
+// #include "system/file_system.h"
+// #include "system/proc.h"
 #include "system/multiboot.h"
 #include "utils/print.h"
 
-#include "system/syscall.h"
+// #include "system/syscall.h"
 
 #include "system/ustar.h"
 

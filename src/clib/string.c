@@ -49,6 +49,15 @@ int memcmp(const void *str1, const void *str2, size_t n) {
     return 0;
 }
 
+void *memchr(const void *ptr, int val, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        if (*((unsigned char *) ptr + i) == (unsigned char) val) {
+            return ((char *) ptr) + i;
+        }
+    }
+    return NULL;
+}
+
 size_t strlen(const char *str) {
     size_t i = 0;
     while (str[i] != NULL) {
@@ -58,16 +67,20 @@ size_t strlen(const char *str) {
 }
 
 char *strchr(const char *str, int c) {
-    if (str == NULL) {
-        return NULL;
-    }
-    
-    char *cur_char = str;
-    while (*cur_char != NULL) {
-        if (*cur_char == c) {
-            return cur_char;
+    while (*str != NULL) {
+        if (*str == c) {
+            return str;
         }
-        cur_char++;
+        str++;
+    }
+    return NULL;
+}
+
+char *strrchr(const char *str, int c) {
+    for (int i = strlen(str); i >= 0; i--) {
+        if (str[i] == c) {
+            return str + i;
+        }
     }
     return NULL;
 }
@@ -113,4 +126,21 @@ int strcmp (const char* str1, const char* str2) {
         str1++;
         str2++;
     }
+}
+
+size_t strcspn(const char *str1, const char *str2) {
+    size_t index = 0;
+    while (*str1 != 0) {
+        const char *key = str2;
+        while (*key != 0) {
+            if (*key == *str1) {
+                return index;
+            } else {
+                key++; 
+            }
+        }
+        str1++;
+        index++;
+    }
+    return index;
 }

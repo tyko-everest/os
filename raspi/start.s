@@ -14,6 +14,15 @@
 
 _start:
 	imm32 sp, STACK_START
+
+    mov     r0, #0
+    ldr     r1, =__bss_start
+    ldr     r2, =__bss_end
+_bss_loop:
+    str     r0, [r1], #4
+    cmp     r1, r2
+    blt     _bss_loop
+
 	bl main
 _infinite_loop:
 	b _infinite_loop

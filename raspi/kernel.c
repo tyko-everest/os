@@ -1,7 +1,9 @@
-#include <stdint.h>
 #include "printf.h"
+#include "fat32.h"
 
 #define NULL 0
+
+extern void * __files_start;
 
 typedef enum {
     PERIPH_BASE =           0x3f000000,
@@ -74,6 +76,21 @@ int main() {
     // setup printf
     init_printf(NULL, putc);
     printf("printf initialized\n");
+
+    printf("ram fs at: 0x%X\n", &__files_start);
+
+    fat32_init();
+    printf("fat32 initialized\n");
+
+    uint8_t buf[512];
+    int res = fat32_readfile("/HELLO", 0, 16, buf);
+    printf("%d chars read\n", res);
+    for (int i = 0; i < res; i ++) {
+        printf("0x%X\n", buf[i]);
+    }
+
+    for(;;);
+
 
     // setup sd card
     // setup GPIO22-27 as ALT3, the EMMC
