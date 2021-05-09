@@ -1,11 +1,12 @@
-CC := gcc
-C_INC :=  -Isrc -Isrc/asm -Isrc/utils -Isrc/system -Isrc/clib -Isrc/drivers
-CFLAGS := $(C_INC) \
-		 -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
-		 -nostartfiles -nodefaultlibs -Wall -Wextra -c -DDEBUG -g
-LDFLAGS := -T link.ld -melf_i386
-AS := nasm
-ASFLAGS := -f elf -F dwarf -g
+CC := arm-none-eabi-gcc
+CFLAGS := -c -mcpu=arm1176jzf-s -fpic -ffreestanding -Wall -Wextra -O2
+C_INC := -Isrc
+
+AS := arm-none-eabi-as
+ASFLAGS := -g
+
+LD := arm-none-eabi-ld
+LDFLAGS := -T link.ld -ffreestanding -nostdlib
 
 # setup hdd on ide primary bus master
 # setup boot cd on ide primary bus slave
@@ -17,102 +18,46 @@ QEMU_FLAGS := -curses -m 256 \
 	-device ide-cd,drive=bootcd,bus=ide.0,unit=1 \
 	-boot d 
 
-SRC_DIR := ./src/
-BUILD_DIR := ./build/
+SRC_DIR := src
+BUILD_DIR := build
 
-C_FILES := kmain.c \
-	drivers/framebuffer.c \
-	drivers/serial.c \
-	drivers/keyboard.c \
-	drivers/ata.c \
-	utils/print.c \
-	utils/elf.c \
-	system/ext2.c \
-	system/gdt.c \
-	system/interrupts.c \
-	system/kheap.c \
-	system/page_frame.c \
-	system/proc.c \
-	system/syscall.c \
-	clib/string.c \
-	clib/stdlib.c \
-	clib/stdio.c
-C_SRCS := $(addprefix $(SRC_DIR)/, $(C_FILES))
-C_OBJS := $(addprefix $(BUILD_DIR)/, $(C_FILES))
+C_SRCS := $(wildcard $(SRC_DIR)/**/*.c $(SRC_DIR)/*.c)
+C_OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(C_SRCS))
 C_OBJS := $(C_OBJS:.c=.o)
 
-AS_FILES := loader.s \
-	asm/port.s \
-	asm/gdt.s \
-	asm/interrupts.s \
-	asm/paging.s
-AS_SRCS := $(addprefix $(SRC_DIR)/, $(AS_FILES))
-AS_OBJS := $(addprefix $(BUILD_DIR)/, $(AS_FILES))
+AS_SRCS := $(wildcard $(SRC_DIR)/**/*.s $(SRC_DIR)/*.s)
+AS_OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(AS_SRCS))
 AS_OBJS := $(AS_OBJS:.s=.o)
 
 OBJS = $(C_OBJS) $(AS_OBJS)
 
-# $(info $$OBJS is [${OBJS}])
-
-all: kernel.elf
-
-kernel.elf: $(OBJS)
-	ld $(LDFLAGS) $(OBJS) -o kernel.elf
-
-os.iso: kernel.elf
-	cp kernel.elf iso/boot/kernel.elf
-	genisoimage -R                              \
-				-b boot/grub/stage2_eltorito    \
-				-no-emul-boot                   \
-				-boot-load-size 4               \
-				-A os                           \
-				-input-charset utf8             \
-				-quiet                          \
-				-boot-info-table                \
-				-o os.iso                       \
-				iso
-
-run: os.iso
-	qemu-system-i386 $(QEMU_FLAGS)
-
-debug: os.iso
-	qemu-system-i386 -s -S $(QEMU_FLAGS)
-
-kill:
-	killall qemu-system-i386
-
-blank_fs:
-	mkfs.ext2 -v -b 1024 -r 0 -d dtest disk.img 10000
-
 dir_guard=@mkdir -p $(@D)
 
-$(BUILD_DIR)/kmain.o: $(SRC_DIR)/kmain.c
-	$(dir_guard)
-	$(CC) $(CFLAGS) $< -o $@
+all: $(BUILD_DIR)/kernel7.img
 
-$(BUILD_DIR)/loader.o: $(SRC_DIR)/loader.s
-	$(dir_guard)
-	$(AS) $(ASFLAGS) $< -o $@
+load: $(BUILD_DIR)/kernel7.img
+	sudo mount -t drvfs D: /mnt/d
+	cp $< /mnt/d/
+	sudo umount /mnt/d
 
-$(BUILD_DIR)/drivers/%.o: $(SRC_DIR)/drivers/%.c
-	$(dir_guard)
-	$(CC) $(CFLAGS) $< -o $@
+$(BUILD_DIR)/kernel7.img: $(BUILD_DIR)/kernel.elf
+	arm-none-eabi-objcopy -O binary $< $@
 
-$(BUILD_DIR)/utils/%.o: $(SRC_DIR)/utils/%.c
-	$(dir_guard)
-	$(CC) $(CFLAGS) $< -o $@
+$(BUILD_DIR)/kernel.elf: $(OBJS) $(BUILD_DIR)/zzz.o
+	arm-none-eabi-gcc $(LDFLAGS) $^ -o $@ -lgcc
 
-$(BUILD_DIR)/system/%.o: $(SRC_DIR)/system/%.c
-	$(dir_guard)
-	$(CC) $(CFLAGS) $< -o $@
+$(BUILD_DIR)/zzz.o: test_fs/zzz.img
+	arm-none-eabi-objcopy --rename-section .data=.zzz -I binary -O elf32-littlearm -B arm $< $@
 
-$(BUILD_DIR)/clib/%.o: $(SRC_DIR)/clib/%.c
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(dir_guard)
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(C_INC) $< -o $@
 
-$(BUILD_DIR)/asm/%.o: $(SRC_DIR)/asm/%.s
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
 	$(dir_guard)
 	$(AS) $(ASFLAGS) $< -o $@
 
 clean:
-	rm -rf build kernel.elf os.iso
+	rm -rf build
+
+.PHONY: all clean load

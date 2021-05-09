@@ -24,10 +24,8 @@
 // currently testing using files within linux
 // thus using the system clib not the OSes
 #include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include "../clib/stdint.h"
-#include "../utils/macros.h"
+#include "clib/string.h"
+#include "utils/macros.h"
 
 #define SECTOR_SIZE 512
 

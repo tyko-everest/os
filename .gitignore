@@ -1,10 +1,4 @@
 /build/
-/test_program/
-/dtest/
 /test_fs/zzz/
-*.elf
-*.iso
 *.out
-*.img*
 *.o
-bochslog.txt

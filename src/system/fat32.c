@@ -1,9 +1,8 @@
 #include "fat32.h"
 
-const static fat32_record_t end_record;
+static const fat32_record_t end_record;
 
 static uint8_t read_buf[SECTOR_SIZE];
-static FILE *fd;
 
 static uint32_t fat_begin_lba;
 static uint32_t cluster_begin_lba;
@@ -11,23 +10,14 @@ static uint32_t sectors_per_cluster;
 static uint32_t root_dir_first_cluster;
 static uint32_t secs_per_fat;
 
-
-void setup_sector() {
-    fd = fopen("/home/tyko/os/test_fs/zzz.img", "r+");
-    // fd = fopen("/mnt/c/Users/Tyko/Downloads/2021-03-04-raspios-buster-armhf-lite.img", "r+");
-    if (fd < 0) {
-        while(1);
-    }
-}
+extern char __files_start[];
 
 void read_sector(uint32_t sector_lba, uint8_t *buf) {
-    fseek(fd, sector_lba * SECTOR_SIZE, SEEK_SET);
-    fread(buf, 1, SECTOR_SIZE, fd);
+    memcpy(buf, __files_start + sector_lba * SECTOR_SIZE, SECTOR_SIZE);
 }
 
 void write_sector(uint32_t sector_lba, uint8_t *buf) {
-    fseek(fd, sector_lba * SECTOR_SIZE, SEEK_SET);
-    fwrite(buf, 1, SECTOR_SIZE, fd);
+    memcpy(__files_start + sector_lba * SECTOR_SIZE, buf, SECTOR_SIZE);
 }
 
 uint32_t make_cluster(const fat32_record_t *record) {
@@ -235,7 +225,8 @@ int set_record(const fat32_record_t *rec, const fat32_record_loc_t *rec_loc) {
 void fat32_init() {
     // find the first partition
     read_sector(0, read_buf);
-    mbr_partition_entry_t first_part = *(mbr_partition_entry_t*) (read_buf + FIRST_PART_OFFSET);
+    mbr_partition_entry_t first_part;
+    memcpy(&first_part, read_buf + FIRST_PART_OFFSET, sizeof(mbr_partition_entry_t));
     read_sector(first_part.lba_begin, read_buf);
     fat32_vol_id_t vol_info = *(fat32_vol_id_t*) read_buf;
 

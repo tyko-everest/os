@@ -9,6 +9,7 @@
         "type_traits": "c",
         "typeinfo": "c",
         "proc.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "cstdio": "c"
     }
 }
