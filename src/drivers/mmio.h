@@ -50,12 +50,8 @@ typedef enum {
     EMMC_SLOTISR_VER =      EMMC_BASE + 0xFC
 } mmio_t; 
 
-inline uint32_t mmio_read(mmio_t reg) {
-    return *((volatile uint32_t *) reg);
-}
-inline void mmio_write(mmio_t reg, uint32_t val) {
-    *((volatile uint32_t *) reg) = val;
-}
+uint32_t mmio_read(mmio_t reg);
+void mmio_write(mmio_t reg, uint32_t val);
 
 
 #endif
