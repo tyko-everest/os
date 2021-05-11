@@ -30,7 +30,7 @@
         {
             "label": "Kill OS",
             "type": "shell",
-            "command": "killall qemu-system-i386"
+            "command": "killall qemu-system-aarch64"
         },
         {
             "label": "Make FS",

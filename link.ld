@@ -1,8 +1,8 @@
 
 SECTIONS {
     __text_start = .;
-    .text 0x8000 : {
-        *(.init)
+    .text 0x80000 : {
+        KEEP(*(.init))
         *(.text*)
     }
     __text_end = .;

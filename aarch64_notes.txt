@@ -1,0 +1,4 @@
+
+Important Registers:
+
+p. 3575 - SCTLR_EL1, System Control Register (EL1)

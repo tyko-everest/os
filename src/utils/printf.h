@@ -142,6 +142,8 @@ functions directly or rename them.
 For further details see source code.
 
 regs Kusti, 23.10.2004
+
+http://www.sparetimelabs.com/tinyprintf/tinyprintf.php
 */
 
 
