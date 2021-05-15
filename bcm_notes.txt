@@ -1,0 +1,16 @@
+State of processor when control is taken over:
+    - in EL2
+    - FPU and SIMD enabled
+State of CPUECTLR_EL1:
+    - bit[6]: enables SMP data coherency
+State of SCR_EL3:
+    - bit[0]: Exception levels lower than EL3 are in Non-secure state, so memory accesses from those Exception levels cannot access Secure memory
+    - bits[1-3]: no exceptions are taken to EL3
+    - bit[7]: Secure Monitor Calls (SMC) are undefined (disabled)
+    - bit[8]: Hypervisor Call (HVC) instructions enabled
+    - bit[10]: EL2 is in aarch64 mode
+
+TLDR: secure monitor and secure mode are disabled, execution should stay in EL2 or lower
+
+
+

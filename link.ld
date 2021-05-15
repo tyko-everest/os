@@ -4,6 +4,9 @@ SECTIONS {
     .text 0x80000 : {
         KEEP(*(.init))
         *(.text*)
+        . = ALIGN(2048);
+        *(.vector)
+
     }
     __text_end = .;
     . = ALIGN(4);

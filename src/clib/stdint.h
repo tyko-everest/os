@@ -13,4 +13,8 @@ typedef short int16_t;
 typedef int int32_t;
 typedef long int64_t;
 
+/* pointer types */
+typedef int64_t intptr_t;
+typedef uint64_t uintptr_t;
+
 #endif

@@ -10,6 +10,7 @@
         "typeinfo": "c",
         "proc.h": "c",
         "stdint.h": "c",
-        "cstdio": "c"
+        "cstdio": "c",
+        "registers.h": "c"
     }
 }

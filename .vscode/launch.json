@@ -13,10 +13,11 @@
             "externalConsole": true,
             "cwd": "${workspaceRoot}",
             "MIMode": "gdb",
-            "stopAtEntry": true,
+            "stopAtEntry": false,
             "preLaunchTask": "Build and Run OS",
             "postDebugTask": "Kill OS",
-            "miDebuggerPath": "/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-elf/bin/aarch64-none-elf-gdb"
+            "miDebuggerPath": "/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-elf/bin/aarch64-none-elf-gdb",
+            "targetArchitecture": "arm64"
         },
 
         {

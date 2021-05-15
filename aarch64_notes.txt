@@ -2,3 +2,12 @@
 Important Registers:
 
 p. 3575 - SCTLR_EL1, System Control Register (EL1)
+
+
+Exceptions:
+
+Table desc - p. 134 of DEN0024A_v8_architecture_PG.pdf
+
+The choice of stack pointer is indicated by the letter t or h appended to the exception level name,
+for example EL0t or EL3h. The t suffix indicates that the exception level uses SP_EL0 and the h suffix indicates it uses SP_ELx,
+where x is the current exception level number. EL0 always uses SP_EL0 so cannot have an h suffix.
