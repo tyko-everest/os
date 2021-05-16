@@ -1,8 +1,8 @@
 
-__virtual_start = 0; /*0xFFFF000000000000;*/
+__virtual_start = 0xFFFF000000000000;
 
 SECTIONS {
-    . = 0x80000;
+    . = __virtual_start + 0x80000;
     __text_start = .;
     .text : AT(ADDR(.text) - __virtual_start) {
         KEEP(*(.init))
