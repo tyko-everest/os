@@ -1,0 +1,36 @@
+Plan:
+
+4 KB granules:
+- overview of 4 KB translation (DDI0487G_a_armv8_arm.pdf, p. 2686)
+- each table takes up 4KB, and can address 512 blocks or tables
+
+- will use TTBR0 for user space and TTBR1 for kernel space
+
+
+Kernel Memory Map:
+virtual range: FFFF 0000 0000 0000 -> FFFF FFFF FFFF FFFF
+note: virtual memory shown below is relative to FFFF 0000 0000 0000
+
+mappings from virtual memory to physical:
+GPIO:               0 - FF FFFF     -> 2000 0000 - 20FF FFFF
+text and rodata:    100 0000 - size -> 0x0 - (0x80000 + kernel size)
+bss and data:       . - size        -> . -> size
+heap:               . - variable    -> variable
+stack:              variable - end  -> variable
+note: end of physical memory depends on the VS/ARM memory split
+
+permissions:
+text and rodata:    RO by EL1, no access by EL0
+bss and data :      RW by EL1, no access by EL0
+heap:               RW by EL1, no access by EL0
+stack:              RW by EL1, no access by EL0
+GPIO:               RW by EL1, no access by EL0
+
+
+Program Memory Map:
+0000 0000 0000 0000 - 0000 FFFF FFFF FFFF
+
+0 -> text and rodata size:  RO by EL0, RW by EL1 <- for debuggers (if that ever happens)
+. -> bss and data size:     RW by EL0, RW by EL1
+. -> heap (variable size):  RW by EL0, RW by EL1
+stack (from top):           RW by EL0, RW by EL1

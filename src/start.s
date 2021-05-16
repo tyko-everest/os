@@ -3,22 +3,102 @@
 
 .section .init
 _start:
+	// note: SCTLR_EL2 is already setup by armstub8.s
+	
 	// disable the hypervisor, execution should never get above EL1 now
 	// unless the kernel issues a HVC instruction, but it won't
 	// bit 31 set means use aarch64 for lower ELs
 	mov x0, 1 << 31
 	msr HCR_EL2, x0
 
+	// zero bss
+	ldr x4, =__virtual_start
+    ldr x1, =__bss_start
+	sub x1, x1, x4
+    ldr x2, =__bss_end
+	sub x2, x2, x4
+_bss_loop:
+    str xzr, [x1], #8
+    cmp x1, x2
+    blt _bss_loop
+
 	// don't trap any floating point instructions
 	mov x0, 0b11 << 20
 	msr CPACR_EL1, x0
 
 	// setup up vector table base address for EL1
-	adr x0, _vector
+	ldr x0, =_vector
 	msr VBAR_EL1, x0
 
-	// setup SCTLR_EL1
-	msr SCTLR_EL1, xzr
+	mov x7, 0x47
+	mov x8, x0
+
+	// setup the mmu
+
+	// setup 4 KB granules in TTBR1 and TTBR0, and 16 MSB not checked
+	ldr x0, =(0b10 << 30) | (0b11 << 28) | (0b0101 << 24) | (16 << 16) | (0b11 << 12) | (0b0101 << 8) | 16
+	msr TCR_EL1, x0
+
+	// setup memory atribute 0 as normal memory
+	mov x0, 0xFF
+	msr MAIR_EL1, x0
+
+	// setting up translation table TTBR1_EL1
+	// setup the first entry of the level 0 translation table
+	// map it into the first level 1 translation table
+	// this maps the first 512 GB of VM
+	ldr x0, =_tt_lv0
+	// table entry, not block entry
+	mov x1, 0b11
+	// the address of the table
+	ldr x2, =_tt_lv1
+	sub x2, x2, x4
+	orr x1, x1, x2
+	// save this configuration in the table
+	str x1, [x0]
+	// setup both TTBRs to map into this
+	msr TTBR1_EL1, x0
+	msr TTBR0_EL1, x0
+
+	mov x0, 0x48
+	
+	// flat map the entire 1 GB of physical memory at 0xFFFF000000000000
+	// the first entry of this stage 1 table controls this memory
+	ldr x0, =_tt_lv1
+	ldr x1, =0x0 // physical memory starts at 0
+	mov x2, 0x701 // should be good config for RW in EL1
+	orr x1, x1, x2
+	str x1, [x0]
+
+	dsb sy
+	isb
+
+
+
+	//mrs x7, TTBR0_EL1
+	//mrs x8, TTBR1_EL1
+	//mrs x9, TCR_EL1
+	//mov x10, x0
+
+	// enable the mmu
+	tlbi ALLE1
+	mrs x0, SCTLR_EL1
+	//mov x1, ((1 << 12) | (1 << 2) | 1)
+	mov x1, 1
+	orr x0, x0, x1
+	msr SCTLR_EL1, x0
+	dsb sy
+	isb
+	
+/*
+	adr x0, _paging_enabled
+	ldr x1, =__virtual_start
+	add x0, x0, x1
+	br x0
+_paging_enabled:
+	mov x0, 0x45
+	b .
+*/
 
 	// setup saved mode as EL1, using SP_EL1
 	mov x0, #0b0101
@@ -34,19 +114,14 @@ _el1_entry:
 	ldr x0, =0x20000000
 	mov sp, x0
 
-	// zero bss
-    ldr x1, =__bss_start
-    ldr x2, =__bss_end
-_bss_loop:
-    str xzr, [x1], #8
-    cmp x1, x2
-    blt _bss_loop
+
 
 	bl main
 _infinite_loop:
 	wfe
 	b _infinite_loop
 
+.section text
 
 _delay:
 	// only one arg actually given, so rest should be safe to overwrite?
@@ -70,4 +145,11 @@ _enter_el0:
 _in_el0:
 	svc #1
 	ret
-	
+
+.section .bss
+.global _tt_lv0
+.global _tt_lv1
+.balign 4096
+.lcomm _tt_lv0, 4096
+.balign 4096
+.lcomm _tt_lv1, 4096

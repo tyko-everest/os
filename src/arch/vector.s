@@ -22,10 +22,8 @@ _vector:
 .balign 128
 	// synch
 	mrs x0, ESR_EL1
-	mov x1, 26
-	ror x0, x0, x1
-	mov x1, 0b111111
-	and x0, x0, x1
+	ror x0, x0, 26
+	and x0, x0, 0b111111
 	b .
 .balign 128
 	// IRQ
