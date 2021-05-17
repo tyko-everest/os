@@ -3,6 +3,6 @@
 
 #include "clib/stdint.h"
 
-void _delay(uint32_t count);
+void _delay(uint64_t count);
 
 #endif

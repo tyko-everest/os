@@ -36,8 +36,3 @@ SECTIONS {
         *(.zzz*)
     }
 }
-/* 
-MEMORY {
-    phys : org = 0x80000, l = 1M
-    virt : org =
-} */

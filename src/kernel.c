@@ -13,8 +13,8 @@ uint32_t _get_sctlr();
 // the ram fs is currently NOT being loaded with the kernel
 int main(uint64_t test) {
 
-    // volatile double a = 1;
-    // a *= 4.5;
+    volatile double a = 1;
+    a *= 4.5;
 
     serial_init();
     init_printf(NULL, serial_putc);

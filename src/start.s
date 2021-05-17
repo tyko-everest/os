@@ -1,6 +1,4 @@
 .global _start
-.global _delay
-
 .section .init
 _start:
 	// note: SCTLR_EL2 is already setup by armstub8.s
@@ -36,8 +34,9 @@ _bss_loop:
 	ldr x0, =(0b10 << 30) | (0b11 << 28) | (0b0101 << 24) | (16 << 16) | (0b11 << 12) | (0b0101 << 8) | 16
 	msr TCR_EL1, x0
 
-	// setup memory attribute 0 as normal memory
-	mov x0, 0xFF
+	// setup memory attribute 0 as normal memory, Inner and Outer Write-Back Non-transient
+	// setup memory attribute 1 as device memory, nGnRnE 
+	mov x0, 0x00FF
 	msr MAIR_EL1, x0
 
 	// setting up translation table TTBR1_EL1
@@ -63,6 +62,11 @@ _bss_loop:
 	sub x0, x0, x4
 	ldr x1, =0x0 // physical memory starts at 0
 	mov x2, 0x701 // should be good config for RW in EL1
+	orr x1, x1, x2
+	str x1, [x0], #8
+	// map the next 1GB as the device memory (even though its only 16 MB)
+	ldr x1, =0x3F000000
+	mov x2, 0x405
 	orr x1, x1, x2
 	str x1, [x0]
 	dsb sy
@@ -99,18 +103,7 @@ _infinite_loop:
 	wfe
 	b _infinite_loop
 
-.section text
-
-_delay:
-	// only one arg actually given, so rest should be safe to overwrite?
-	mov x1, #0
-	mov x2, #1
-_delay_loop:
-	sub x0, x0, x2
-	cmp x0, x1
-	bne _delay_loop
-	ret lr
-
+.section .text
 
 _enter_el0:
 	msr SPSR_EL1, xzr
