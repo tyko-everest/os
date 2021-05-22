@@ -32,9 +32,9 @@ dir_guard=@mkdir -p $(@D)
 all: $(BUILD_DIR)/kernel8.img
 
 load: $(BUILD_DIR)/kernel8.img
-	sudo mount -t drvfs D: /mnt/d
-	cp $< /mnt/d/
-	sudo umount /mnt/d
+	sudo mount -t drvfs E: /mnt/e
+	cp $< /mnt/e/
+	sudo umount /mnt/e
 
 run: $(BUILD_DIR)/kernel8.img
 	qemu-system-aarch64 $(QEMU_FLAGS)
@@ -45,11 +45,11 @@ debug: $(BUILD_DIR)/kernel8.img
 $(BUILD_DIR)/kernel8.img: $(BUILD_DIR)/kernel.elf
 	${PREFIX}-objcopy -O binary $< $@
 
-$(BUILD_DIR)/kernel.elf: $(OBJS) #$(BUILD_DIR)/zzz.o
+$(BUILD_DIR)/kernel.elf: $(OBJS) $(BUILD_DIR)/zzz.o
 	${CC} $(LDFLAGS) $^ -o $@ -lgcc
 
 $(BUILD_DIR)/zzz.o: test_fs/zzz.img
-	${PREFIX}-objcopy --rename-section .data=.zzz -I binary -O elf32-littlearm -B arm $< $@
+	${PREFIX}-objcopy --rename-section .data=.zzz -I binary -O elf64-littleaarch64 $< $@
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(dir_guard)

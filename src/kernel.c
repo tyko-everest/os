@@ -5,28 +5,29 @@
 #include "utils/printf.h"
 #include "system/fat32.h"
 #include "system/mmu.h"
+#include "system/syscall.h"
 
 extern void * __files_start;
 
 uint32_t _get_sctlr();
 
-int syscall_test(uint64_t a, uint64_t b, uint64_t c) {
+ssize_t read(const char *path, void *buf, size_t count, size_t from) {
     asm("svc 0");
-    return -1;
 }
 
-// the ram fs is currently NOT being loaded with the kernel
-int main(uint64_t test) {
-
-    volatile int a = 1;
+int main() {
 
     serial_init();
     init_printf(NULL, serial_putc);
     printf("\nprintf initialized\n");
 
-    printf("making syscall\n");
-    syscall_test(10, 14, -5);
-    printf("back from syscall\n");
+    fat32_init();
+    const char *path = "/HELLO";
+    char buf[100];
+
+    printf("making read\n");
+    volatile int res = read(path, buf, 100, 0);
+    printf("read from file: %s\n", buf);
 
     printf("looping forever...\n");
     for(;;);
