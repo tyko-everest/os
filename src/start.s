@@ -96,7 +96,6 @@ _bss_loop:
 	ldr x0, =0x000003c5
 	msr SPSR_EL2, x0
 	// set "return point" to just below after eret
-	// this also transfers control to using virtual addresses
 	ldr x0, =_el1_entry
 	sub x0, x0, x4
 	msr ELR_EL2, x0
@@ -106,50 +105,45 @@ _el1_entry:
 
 	// setup the mmu
 
-	// setup 4 KB granules in TTBR1 and TTBR0, and 16 MSB not checked
-	ldr x0, =(0b10 << 30) | (0b11 << 28) | (0b0101 << 24) | (16 << 16) | (0b11 << 12) | (0b0101 << 8) | 16
+	// setup 4 KB granules in TTBR1 and TTBR0, and 25 MSB not checked for both initially
+	// i.e. 512 MB VM space
+	ldr x0, =(0b10 << 30) | (0b11 << 28) | (0b0101 << 24) | (25 << 16) | (0b11 << 12) | (0b0101 << 8) | 25
 	msr TCR_EL1, x0
 
 	// setup memory attribute 0 as normal memory, Inner and Outer Write-Back Non-transient
-	// setup memory attribute 1 as device memory, nGnRnE 
+	// setup memory attribute 1 as device memory, nGnRE 
 	mov x0, 0x04FF
 	msr MAIR_EL1, x0
 
-	// setting up translation table TTBR1_EL1
-	// setup the first entry of the level 0 translation table
-	// map it into the first level 1 translation table
-	// this maps the first 512 GB of VM
-	ldr x0, =_tt_lv0
-	sub x0, x0, x4
-	// table entry, not block entry
-	mov x1, 0b11
-	// the address of the table
-	ldr x2, =_tt_lv1
-	sub x2, x2, x4
-	orr x1, x1, x2
-	// save this configuration in the table
-	str x1, [x0]
-	// finally save this setup in both TTBRs
-	// need TTBR0 so that it doesn't fault immediately after
-	// turning on the mmu
-	msr TTBR0_EL1, x0
-	msr TTBR1_EL1, x0
-	
+	/*
+	TODO
+
+	Want to not use the entire virtual memory space for the kernel,
+	the kernel will never be swapped out so no point in it being bigger than physical memory
+	will likely drop down to only 2nd and 3rd level translation, this just maps 1 GB
+
+	Note! The higher virtual addresses always end at FFFF FFFF FFFF FFFF
+	This means by decreases the space, need to link above FFFF 0000 0000 0000
+	i.e. if space were 1GB, higher VM starts at FFFF FFFF C000 0000
+	*/
+
 	// flat map the entire 1 GB of physical memory at 0xFFFF000000000000
 	// the first entry of this stage 1 table controls this memory
-	ldr x0, =_tt_lv1
+	ldr x0, =_tt_lv0
 	sub x0, x0, x4
+	msr TTBR0_EL1, x0
+	msr TTBR1_EL1, x0
 	mov x1, 0 // physical memory starts at 0
 	mov x2, 0x701 // should be good config for RW in EL1
 	orr x1, x1, x2
-	str x1, [x0], #8
+	str x1, [x0]
 	// map the next 1GB as the device memory (even though its only 16 MB)
 	// mistake! if output area ia 1GB aligned, input phys mem needs to be 1GB aligned as well!
 	// this is only 16 MB aligned, here is the issue (at least I really hope so)
 	mov x1, 0
 	mov x2, 0x605
 	orr x1, x1, x2
-	str x1, [x0]
+	str x1, [x0, 8]
 	dsb sy
 	isb
 
@@ -163,9 +157,10 @@ _el1_entry:
 	ldr x0, =_virt_mapping
 	br x0
 _virt_mapping:
-	// also operating in the high 48 bit VM range now, as MMU is enabled in EL1
+	// also operating in the high VM range now, as MMU is enabled in EL1
 	// stack must be 16-bytes aligned
-	ldr x0, =0xFFFF000000080000
+	// will start it below the text, and can overwrite the earlier bootcode
+	ldr x0, =__text_start
 	mov sp, x0
 
 	bl main
@@ -189,8 +184,5 @@ _in_el0:
 
 .section .bss
 .global _tt_lv0
-.global _tt_lv1
 .balign 4096
 .lcomm _tt_lv0, 4096
-.balign 4096
-.lcomm _tt_lv1, 4096

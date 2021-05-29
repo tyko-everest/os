@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.s": "arm",
         "ustar.h": "c",
         "ext2.h": "c",
         "limits": "c",
@@ -11,6 +12,7 @@
         "proc.h": "c",
         "stdint.h": "c",
         "cstdio": "c",
-        "registers.h": "c"
+        "registers.h": "c",
+        "interrupts.h": "c"
     }
 }

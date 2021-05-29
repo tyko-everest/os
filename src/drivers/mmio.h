@@ -5,7 +5,7 @@
 #include "drivers/delay.h"
 
 typedef enum {
-    PERIPH_BASE =           0xFFFF00007F000000,
+    PERIPH_BASE =           0xFFFFFF807F000000,
     // PERIPH_BASE =           0x3F000000,
 
     GPIO_BASE =             PERIPH_BASE + 0x200000,

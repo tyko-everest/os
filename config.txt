@@ -1,0 +1,4 @@
+enable_uart=1
+core_freq=250
+kernel=kernel8.img
+gpu_mem=16

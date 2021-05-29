@@ -152,6 +152,8 @@ http://www.sparetimelabs.com/tinyprintf/tinyprintf.php
 
 #include <stdarg.h>
 
+#define PRINTF_LONG_SUPPORT
+
 void init_printf(void* putp,void (*putf) (void*,char));
 
 void printf(char *fmt, ...);

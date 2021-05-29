@@ -1,5 +1,6 @@
 
-__virtual_start = 0xFFFF000000000000;
+__virtual_start = 0xFFFFFF8000000000;
+/* __virtual_start = 0; */
 
 SECTIONS {
     . = __virtual_start + 0x80000;
@@ -35,4 +36,9 @@ SECTIONS {
     .zzz : AT(ADDR(.zzz) - __virtual_start) {
         *(.zzz*)
     }
+    __files_end = .;
+    . = ALIGN(4096);
+    __kernel_heap = .;
+    . += 4096;
+    __free_mem_start = .;
 }

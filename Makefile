@@ -45,13 +45,17 @@ debug: $(BUILD_DIR)/kernel8.img
 $(BUILD_DIR)/kernel8.img: $(BUILD_DIR)/kernel.elf
 	${PREFIX}-objcopy -O binary $< $@
 
-$(BUILD_DIR)/kernel.elf: $(OBJS) $(BUILD_DIR)/zzz.o
+$(BUILD_DIR)/kernel.elf: $(OBJS) #$(BUILD_DIR)/zzz.o
 	${CC} $(LDFLAGS) $^ -o $@ -lgcc
 
 $(BUILD_DIR)/zzz.o: test_fs/zzz.img
 	${PREFIX}-objcopy --rename-section .data=.zzz -I binary -O elf64-littleaarch64 $< $@
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+$(BUILD_DIR)/kernel.o: $(SRC_DIR)/kernel.c
+	$(dir_guard)
+	$(CC) $(CFLAGS) $(C_INC) $< -o $@
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/%.h
 	$(dir_guard)
 	$(CC) $(CFLAGS) $(C_INC) $< -o $@
 
@@ -60,6 +64,6 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
 	$(AS) $(ASFLAGS) $< -o $@
 
 clean:
-	rm -rf build
+	rm -r build
 
 .PHONY: all clean load run debug

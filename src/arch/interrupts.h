@@ -3,6 +3,7 @@
 
 #include "clib/stddef.h"
 #include "clib/stdint.h"
+#include "system/proc.h"
 #include "system/syscall.h"
 #include "utils/printf.h"
 
@@ -21,11 +22,6 @@ typedef enum {
     // ...
     EC_SVC64    = 0b010101,
 } int_ec_t;
-
-typedef struct {
-    uint64_t x[32];
-    struct {uint64_t low; uint64_t high;} v[32];
-} stacked_regs_t;
 
 void interrupt_handler(uint64_t source, uint64_t esr, stacked_regs_t *reg);
 
