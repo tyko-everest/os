@@ -62,7 +62,7 @@ void print_free_memory() {
     mem_segment_t *curr_seg = first_free_segment;
     while (curr_seg != NULL) {
         printf("segment start: %lX", curr_seg->addr);
-        printf("\tsegment end: %lX\n", curr_seg->addr + curr_seg->size);
+        printf("\tsegment end: %lX\n", curr_seg->addr + curr_seg->size - 1);
         curr_seg = curr_seg->next;
     }
 }

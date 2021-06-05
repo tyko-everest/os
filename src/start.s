@@ -8,65 +8,6 @@
 _start:
 	// note: SCTLR_EL2 is already setup by armstub8.s
 
-/*
-	// temporarily setting up the serial as the first thing for debugging
-	// setup gpio 14 and 15 as alt5
-	movz x0, 0x3F20, lsl 16
-	movk x0, 0x0004
-	mov w1, 0b0010 << 12
-	movk w1, 0b01, lsl 16
-	str w1, [x0]
-	// setup no pull up or down on these pins
-	movk x0, 0x0094
-	mov w1, 0
-	str w1, [x0]
-	.rept 150
-	nop
-	.endr
-	movk x0, 0x0098
-	mov w1, 0b11 << 14
-	str w1, [x0]
-	.rept 150
-	nop
-	.endr
-	movk x0, 0x0094
-	mov w1, 0
-	str w1, [x0]
-	movk x0, 0x0098
-	mov w1, 0
-	str w1, [x0]
-
-
-	// setup uart
-	mov x0, 0x5004
-	movk x0, 0x3F21, lsl 16
-	mov w1, 1
-	str w1, [x0]
-	// disable transmit and receiver
-	movk x0, 0x5060
-	mov w1, 0
-	str w1, [x0]
-	// enable 8 bit mode
-	movk x0, 0x504C
-	mov w1, 3
-	str w1, [x0]
-	// set baud rate of 115200
-	movk x0, 0x5068
-	mov w1, 270
-	str w1, [x0]
-	// enable transmit and receiver
-	movk x0, 0x5060
-	mov w1, 3
-	str w1, [x0]
-	// need delay before it becomes ready
-	.rept 100
-	nop
-	.endr
-	// setup x16 as IO_REG
-	movk x0, 0x5040
-	mov x16, x0
-*/
-
 	// disable the hypervisor, execution should never get above EL1 now
 	// unless the kernel issues a HVC instruction, but it won't
 	// bit 31 set means use aarch64 for lower ELs
@@ -129,7 +70,7 @@ _el1_entry:
 
 	// flat map the entire 1 GB of physical memory at 0xFFFF000000000000
 	// the first entry of this stage 1 table controls this memory
-	ldr x0, =_tt_lv0
+	ldr x0, =_tt_lv1
 	sub x0, x0, x4
 	msr TTBR0_EL1, x0
 	msr TTBR1_EL1, x0
@@ -157,9 +98,9 @@ _el1_entry:
 	ldr x0, =_virt_mapping
 	br x0
 _virt_mapping:
-	// also operating in the high VM range now, as MMU is enabled in EL1
+	// operating in the high VM range now
 	// stack must be 16-bytes aligned
-	// will start it below the text, and can overwrite the earlier bootcode
+	// will start it below the text; it can overwrite the earlier bootcode
 	ldr x0, =__text_start
 	mov sp, x0
 
@@ -168,21 +109,7 @@ _infinite_loop:
 	wfe
 	b _infinite_loop
 
-.section .text
-
-_enter_el0:
-	msr SPSR_EL1, xzr
-	// set execution to just after eret
-	adr x0, _in_el0
-	msr ELR_EL1, x0
-	mrs x0, CurrentEL
-	// move into EL0
-	eret
-_in_el0:
-	svc #1
-	ret
-
 .section .bss
-.global _tt_lv0
+.global _tt_lv1
 .balign 4096
-.lcomm _tt_lv0, 4096
+.lcomm _tt_lv1, 4096

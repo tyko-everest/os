@@ -32,13 +32,15 @@ void interrupt_handler(uint64_t source, uint64_t esr, stacked_regs_t *reg) {
             
             default:
                 printf("unhandled syscall: %d\n", syscall);
+                for(;;);
                 break;
             }
             reg->x[0] = sys_return;
             break;
         
         default:
-            printf("unhandled exception class: 0x%X", get_ec(esr));
+            printf("unhandled exception class: 0x%X\n", get_ec(esr));
+            for(;;);
             break;
         }
         

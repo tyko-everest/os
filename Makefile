@@ -1,7 +1,7 @@
 PREFIX := aarch64-none-elf
 
 CC := ${PREFIX}-gcc
-CFLAGS := -c -mstrict-align -fpic -ffreestanding -Wall -Wextra -O2 -g
+CFLAGS := -c -mstrict-align -fpic -ffreestanding -Wall -Wextra -Og -g
 C_INC := -Isrc
 
 AS := ${PREFIX}-as
