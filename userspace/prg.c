@@ -1,10 +1,19 @@
 
-const char test[] = "Hello!";
-char data[100];
+const char test[] = "Hello from userspace!";
+
+int sqr(int a) {
+    return a*a;
+}
 
 int main() {
-    volatile int num = 10;
-    num += 10;
-    asm("svc 0x45");
+
+    volatile int b = sqr(10);
+
+    asm(
+        "mov x0, %[p]"
+        :
+        : [p] "r" (test)
+    );
+    asm("svc 30");
     for(;;);
 }

@@ -30,6 +30,7 @@
 #define VM_TABLE    0b11
 #define VM_PAGE     0b11
 
+#define VM_ATTR_INDEX(x)    ((x) << 3)
 #define VM_KERNEL_RW        (0b00 << 6)
 #define VM_KERNEL_RO        (0b10 << 6)
 #define VM_USER_RW          (0b01 << 6)

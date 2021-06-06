@@ -23,8 +23,9 @@
 
 // currently testing using files within linux
 // thus using the system clib not the OSes
-#include <stdbool.h>
+#include "clib/stdbool.h"
 #include "clib/string.h"
+#include "system/kheap.h"
 #include "utils/macros.h"
 
 #define SECTOR_SIZE 512
@@ -186,7 +187,7 @@ int get_record_in_dir(const char *name, uint32_t dir_cluster, fat32_record_t *re
  * @param ret_loc pointer to a location struct so it can easily be modified later if necessary
  * @return 0 on success, -1 on failure if file was not found
  */
-int get_record(char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc);
+int get_record(const char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc);
 
 /**
  * Sets a directory record on the storage device
@@ -213,7 +214,7 @@ void fat32_init();
  * @return the number of bytes read, can be less than requested if EOF hit
  * or -1 on an error
  */
-int fat32_readfile(char *path, uint32_t start, uint32_t num, uint8_t *buf);
+int fat32_readfile(const char *path, uint32_t start, uint32_t num, uint8_t *buf);
 
 /**
  * Writes a number of bytes to a file
@@ -224,7 +225,7 @@ int fat32_readfile(char *path, uint32_t start, uint32_t num, uint8_t *buf);
  * @return the number of bytes written, can be less than requested,
  * or -1 on an error
  */
-int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf);
+int fat32_writefile(const char *path, uint32_t start, uint32_t num, uint8_t *buf);
 
 /**
  * Makes a new file at the given path
@@ -233,13 +234,13 @@ int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf);
  * @param is_dir true for directory, false for file
  * @return 0 for success, -1 for failure
  */
-int fat32_makefile(char *path, bool is_dir);
+int fat32_makefile(const char *path, bool is_dir);
 
 /**
  * Deletes a file or directory (if empty) given a path
  * @param path the absolute path of the new file
  * @return 0 for success, -1 for failure
  */
-int fat32_deletefile(char *path);
+int fat32_deletefile(const char *path);
 
 #endif

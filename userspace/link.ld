@@ -1,6 +1,9 @@
+ENTRY(main)
+
 SECTIONS {
     . = 0;
     .text : {
+        *(.start)
         *(.text*)
     }
     . = ALIGN(4);

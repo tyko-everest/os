@@ -85,11 +85,6 @@ int vm_allocate_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs) {
     }
 
     uint64_t *lv3_table = (uint64_t *) ((lv2_table[lv2_offset] & 0xFFFFFFFFF000) + phys_to_virt_offset);
-    if ((lv3_table[lv3_offset] & VM_PAGE) == VM_PAGE) {
-        // VM page already taken
-        return -1;
-    }
-
     lv3_table[lv3_offset] = phys_addr | attribs | VM_PAGE;
     
     size_t page_num = (size_t) virt_addr >> VM_LOG_PAGE_SIZE;

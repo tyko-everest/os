@@ -14,9 +14,12 @@ typedef enum {
 
     SYS_FORK    = 20,
     SYS_EXEC    = 21,
-    SYS_EXIT    = 22
+    SYS_EXIT    = 22,
+
+    SYS_PRINT   = 30
 } syscall_no_t;
 
 ssize_t sys_read(const char *path, void *buf, size_t count, size_t from);
+void sys_print(const char *str);
 
 #endif

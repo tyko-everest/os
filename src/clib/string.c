@@ -98,20 +98,21 @@ char *strtok(char *str, const char *delim) {
             token++;
         }
     }
-    char *ret = token;
-    // if (*ret == 0) {
-    //     ret = NULL;
-    // }
 
-    // get first delim character
-    token = strchr(token, *delim);
-    // see if there are any more
-    while (token != NULL && *token == *delim) {
-        *token = NULL;
-        token++;
+    if (token == NULL) {
+        return NULL;
+
+    } else {
+        char *ret = token;
+        // get first delim character
+        token = strchr(token, *delim);
+        // see if there are any more
+        while (token != NULL && *token == *delim) {
+            *token = NULL;
+            token++;
+        }
+        return ret;
     }
-
-    return ret;
 }
 
 int strcmp (const char* str1, const char* str2) {

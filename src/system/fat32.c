@@ -30,9 +30,9 @@ uint32_t cluster_to_lba(uint32_t cluster) {
 
 uint32_t get_free_cluster() {
     uint32_t buf[CLUSTER_NUMS_PER_SECTOR];
-    for (int sec = 0; sec < secs_per_fat; sec++) {
+    for (size_t sec = 0; sec < secs_per_fat; sec++) {
         read_sector(fat_begin_lba + sec, (uint8_t*) buf);
-        for (int num = 0; num < CLUSTER_NUMS_PER_SECTOR; num++) {
+        for (size_t num = 0; num < CLUSTER_NUMS_PER_SECTOR; num++) {
             if (buf[num] == 0) {
                 return sec * CLUSTER_NUMS_PER_SECTOR + num;
             }
@@ -106,7 +106,7 @@ bool names_match(const char *file_str, const char *file_83) {
 int name_str_to_83(const char *file_str, char *file_83) {
     // first check if all characters are valid and there is maximum 1 period
     uint32_t per_cnt = 0;
-    for (int i = 0; i < strlen(file_str); i++) {
+    for (size_t i = 0; i < strlen(file_str); i++) {
         if (file_str[i] == '.') {
             per_cnt++;
             if (per_cnt > 1) {
@@ -152,12 +152,12 @@ int get_record_in_dir(const char *name, uint32_t dir_cluster, fat32_record_t *re
     for (;;) {
 
         // starting from 0, which sector of the current cluster are we on
-        for (int sector_num = 0; sector_num < sectors_per_cluster; sector_num++) {
+        for (size_t sector_num = 0; sector_num < sectors_per_cluster; sector_num++) {
             uint32_t lba = cluster_to_lba(dir_cluster) + sector_num;
             read_sector(lba, (uint8_t*) buf);
 
             // in the given sector, which directory are we at
-            for (int dir_index = 0; dir_index < SECTOR_SIZE / sizeof(fat32_record_t); dir_index++) {
+            for (size_t dir_index = 0; dir_index < SECTOR_SIZE / sizeof(fat32_record_t); dir_index++) {
                 // check if end of directory list had been reached
                 if (buf[dir_index].name[0] == 0) {
                     memcpy(ret_rec, buf + dir_index, sizeof(fat32_record_t));
@@ -181,14 +181,17 @@ int get_record_in_dir(const char *name, uint32_t dir_cluster, fat32_record_t *re
     }
 }
 
-int get_record(char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc) {
+int get_record(const char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc) {
 
     uint32_t dir_cluster = root_dir_first_cluster;
     fat32_record_t rec;
     fat32_record_loc_t loc;
 
     bool prev_was_file = false;
-    char *name = strtok(path, PATH_DELIM_STR);
+
+    char *path_copy = kmalloc(strlen(path) + 1);
+    memcpy(path_copy, path, strlen(path) + 1);
+    char *name = strtok(path_copy, PATH_DELIM_STR);
     // assume path has been checked to not be null
     while (name != NULL) {
         // if a object was found that was a file, but it was not the last part of the path
@@ -200,6 +203,7 @@ int get_record(char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc)
         if (res < 0) {
             memcpy(ret_rec, &rec, sizeof(fat32_record_t));
             memcpy(ret_loc, &loc, sizeof(fat32_record_loc_t));
+            kfree(path_copy);
             return -1;
         } else {
             if (!(rec.attrib & FAT_ATTR_DIR)) {
@@ -211,6 +215,7 @@ int get_record(char *path, fat32_record_t *ret_rec, fat32_record_loc_t *ret_loc)
     }
     memcpy(ret_rec, &rec, sizeof(fat32_record_t));
     memcpy(ret_loc, &loc, sizeof(fat32_record_loc_t));
+    kfree(path_copy);
     return 0;
 }
 
@@ -237,7 +242,7 @@ void fat32_init() {
     secs_per_fat = vol_info.secs_per_fat;
 }
 
-int fat32_readfile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
+int fat32_readfile(const char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     uint8_t temp_buf[SECTOR_SIZE];
     uint32_t count = 0;
 
@@ -266,7 +271,7 @@ int fat32_readfile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     uint32_t sector = 0;
 
     // find the first cluster where we need to start reading
-    for (int i = 0; i < start / (sectors_per_cluster * SECTOR_SIZE); i++) {
+    for (size_t i = 0; i < start / (sectors_per_cluster * SECTOR_SIZE); i++) {
         cluster = get_next_cluster(cluster);
     }
     // find the sector within that cluster
@@ -317,7 +322,7 @@ int fat32_readfile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     return -1;
 }
 
-int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
+int fat32_writefile(const char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     uint8_t temp_buf[SECTOR_SIZE];
     uint32_t count = 0;
 
@@ -343,7 +348,7 @@ int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     }
 
     // find the first cluster where we need to start writing
-    for (int i = 0; i < start / (sectors_per_cluster * SECTOR_SIZE); i++) {
+    for (size_t i = 0; i < start / (sectors_per_cluster * SECTOR_SIZE); i++) {
         cluster = get_or_make_next_cluster(cluster);
     }
 
@@ -411,7 +416,7 @@ int fat32_writefile(char *path, uint32_t start, uint32_t num, uint8_t *buf) {
     return -1;
 }
 
-int fat32_makefile(char *path, bool is_dir) {
+int fat32_makefile(const char *path, bool is_dir) {
 
     fat32_record_t old_record;
     fat32_record_loc_t rec_loc;
@@ -463,7 +468,7 @@ int fat32_makefile(char *path, bool is_dir) {
     return 0;    
 }
 
-int fat32_deletefile(char *path) {
+int fat32_deletefile(const char *path) {
     fat32_record_t record;
     fat32_record_loc_t rec_loc;
     if (get_record(path, &record, &rec_loc) != 0) {

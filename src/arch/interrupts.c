@@ -8,8 +8,13 @@ static inline size_t get_iss(uint64_t esr) {
     return esr & 0x1FFFFFF;
 }
 
-void interrupt_handler(uint64_t source, uint64_t esr, stacked_regs_t *reg) {
-    printf("interrupt -> source: %d, esr: 0x%X\n", source, esr);
+void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg) {
+    uint64_t elr;
+    asm (
+        "mrs %[elr], ELR_EL1"
+        : [elr] "=r" (elr)
+    );
+    printf("interrupt -> source: %d, esr: 0x%X, elr: 0x%X\n", source, esr, elr);
 
     size_t syscall;
     ssize_t sys_return;
@@ -17,6 +22,7 @@ void interrupt_handler(uint64_t source, uint64_t esr, stacked_regs_t *reg) {
     // which entry in the vector table did this come from
     switch (source) {
     case INT_CURR_EL_SPx | INT_SRC_Sync:
+    case INT_LOW_EL_64 | INT_SRC_Sync:
 
         // which synchronous execptionc code was given
         switch (get_ec(esr)) {
@@ -30,6 +36,10 @@ void interrupt_handler(uint64_t source, uint64_t esr, stacked_regs_t *reg) {
                 sys_return = sys_read((const char *) reg->x[0], (char *) reg->x[1], (size_t) reg->x[2], (size_t) reg->x[3]);
                 break;
             
+            case SYS_PRINT:
+                sys_print((const char *) reg->x[0]);
+                break;
+
             default:
                 printf("unhandled syscall: %d\n", syscall);
                 for(;;);

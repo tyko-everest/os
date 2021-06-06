@@ -45,7 +45,7 @@ debug: $(BUILD_DIR)/kernel8.img
 $(BUILD_DIR)/kernel8.img: $(BUILD_DIR)/kernel.elf
 	${PREFIX}-objcopy -O binary $< $@
 
-$(BUILD_DIR)/kernel.elf: $(OBJS) #$(BUILD_DIR)/zzz.o
+$(BUILD_DIR)/kernel.elf: $(OBJS) $(BUILD_DIR)/zzz.o
 	${CC} $(LDFLAGS) $^ -o $@ -lgcc
 
 $(BUILD_DIR)/zzz.o: test_fs/zzz.img

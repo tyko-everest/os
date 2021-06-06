@@ -1,11 +1,16 @@
 PREFIX := aarch64-none-elf
 
 CC := ${PREFIX}-gcc
-CFLAGS := -mstrict-align -nostdlib -ffreestanding -Wall -Wextra -O2 -T link.ld -z max-page-size=4096
+CFLAGS := -mstrict-align -nostdlib -ffreestanding -fno-pic -Wall -Wextra -Og -T link.ld -z max-page-size=4096
 C_INC := -Isrc
 
-PRG: prg.c
-	$(CC) $(CFLAGS) $(C_INC) $< -o $@
+PRG: prg.c start.s
+	$(CC) $(CFLAGS) $(C_INC) $^ -o $@
+
+add_to_fs: PRG
+	make -C ../test_fs mount
+	sudo cp PRG ../test_fs/zzz
+	make -C ../test_fs umount
 
 clean:
 	rm PRG
