@@ -45,29 +45,24 @@ inline void write_ttbr0_el1(uint64_t val) {
     );
 }
 
-static uint64_t ttbr0_temp[512] __attribute__ ((aligned (4096)));
-
 void vm_init() {
     uint64_t tcr = read_tcr_el1();
     tcr &= ~0b111111;
     tcr |= 34;
     write_tcr_el1(tcr);
-    write_ttbr0_el1(((uintptr_t) ttbr0_temp) - (uintptr_t) __virtual_start);
+    
     asm("tlbi vmalle1");
     asm("dsb sy");
     asm("isb");
 }
 
-/**
- * allocates a page of PM at a desired VM address in userspace
- * i.e. the range is 0 -> 1 GB
- * 
- * @param virt_addr the virtual address of the start of the page
- * @param phys_addr the physical address of the start of a page
- * @param attribs the desired properties of the memory
- * @return 0 on success, negative on error
- */
-int vm_allocate_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs) {
+uintptr_t vm_new_ttb() {
+    uintptr_t ttb = pm_get_page();
+    memset(ttb + (size_t) __virtual_start, 0, VM_PAGE_SIZE);
+    return ttb;
+}
+
+int vm_allocate_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs, uintptr_t ttb) {
 
     // since kernel is flat mapped, converting PM to kernel VM addresses
     // is simply addition
@@ -76,7 +71,7 @@ int vm_allocate_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs) {
     size_t lv2_offset = (((uintptr_t) virt_addr) >> (12 + 9)) & 0x1FF;
     size_t lv3_offset = (((uintptr_t) virt_addr) >> 12) & 0x1FF;
 
-    uint64_t *lv2_table = (uint64_t *) ((read_ttbr0_el1() & 0xFFFFFFFFF000) + phys_to_virt_offset);
+    uint64_t *lv2_table = (uint64_t *) ((ttb & 0xFFFFFFFFF000) + phys_to_virt_offset);
     if ((lv2_table[lv2_offset] & 0b1) == 0) {
         // TODO add check
         uintptr_t new_lv3_table = pm_get_page();

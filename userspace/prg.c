@@ -1,5 +1,7 @@
 
-const char test[] = "Hello from userspace!";
+const char test[] = "Hello from userspace!\n";
+int a = 10;
+int c[5];
 
 int sqr(int a) {
     return a*a;
@@ -7,7 +9,7 @@ int sqr(int a) {
 
 int main() {
 
-    volatile int b = sqr(10);
+    c[1] = sqr(a);
 
     asm(
         "mov x0, %[p]"

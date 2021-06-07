@@ -2,6 +2,7 @@
 #define INCLUDE_PROC_H
 
 // has the definition for the register state struct
+#include "arch/arm.h"
 #include "clib/stdint.h"
 #include "system/pm.h"
 #include "system/mmu.h"
@@ -25,7 +26,10 @@ typedef struct {
 } general_regs_t;
 
 typedef struct {
-    uint64_t sp;
+    uint64_t sp_el0;
+    uint64_t elr_el1;
+    uint64_t spsr_el1;
+    uint64_t ttbr0_el1;
 } system_regs_t;
 
 typedef struct {
@@ -39,7 +43,7 @@ typedef struct {
 
 int add_fd_entry(const char *path);
 
-void proc_load(const char *path, process_t *proc);
+int proc_load(const char *path, process_t *proc);
 void proc_start(const process_t *proc);
 
 #endif

@@ -15,6 +15,7 @@
  * 
  */
 
+#include "arch/arm.h"
 #include "clib/stddef.h"
 #include "clib/stdint.h"
 #include "clib/stdbool.h"
@@ -31,25 +32,36 @@
 #define VM_PAGE     0b11
 
 #define VM_ATTR_INDEX(x)    ((x) << 3)
-#define VM_KERNEL_RW        (0b00 << 6)
-#define VM_KERNEL_RO        (0b10 << 6)
-#define VM_USER_RW          (0b01 << 6)
-#define VM_USER_RO          (0b11 << 6)
-#define VM_SHARE_NONE       (0b00 << 8)
-#define VM_SHARE_OUTER      (0b10 << 8)
-#define VM_SHARE_INNER      (0b11 << 8)
-#define VM_ACCESS_FLAG      (0b1 << 10)
-#define VM_EL1_EXEC_DISABLE (0b1 << 53)
-#define VM_EL0_EXEC_DISABLE (0b1 << 54)
+#define VM_KERNEL_RW        (0b00UL << 6)
+#define VM_KERNEL_RO        (0b10UL << 6)
+#define VM_USER_RW          (0b01UL << 6)
+#define VM_USER_RO          (0b11UL << 6)
+#define VM_SHARE_NONE       (0b00UL << 8)
+#define VM_SHARE_OUTER      (0b10UL << 8)
+#define VM_SHARE_INNER      (0b11UL << 8)
+#define VM_ACCESS_FLAG      (0b1UL << 10)
+#define VM_EL1_EXEC_DISABLE (0b1UL << 53)
+#define VM_EL0_EXEC_DISABLE (0b1UL << 54)
 
 uint64_t read_sctlr_el1();
 
 void vm_init();
 
-// void invalidate_tlb(void* virt_addr);
 // uint32_t get_phys_addr(void* virt_addr);
-// void generate_page_table(void *virt_addr, uint32_t flags);
-int vm_allocate_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs);
+
+uintptr_t vm_new_ttb();
+
+/**
+ * allocates a page of PM at a desired VM address in userspace
+ * i.e. the range is 0 -> 1 GB
+ * 
+ * @param virt_addr the virtual address of the start of the page
+ * @param phys_addr the physical address of the start of a page
+ * @param attribs the desired properties of the memory
+ * @param ttb the physical address of the translation table base
+ * @return 0 on success, negative on error
+ */
+int vm_allocate_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs, uintptr_t ttb);
 
 
 
