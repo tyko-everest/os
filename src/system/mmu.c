@@ -2,54 +2,12 @@
 
 extern char __virtual_start[];
 
-inline uint64_t read_sctlr_el1() {
-    uint64_t ret;
-    asm (
-        "mrs %[ret], SCTLR_EL1"
-        : [ret] "=r" (ret)
-    );
-    return ret;
-}
-
-inline uint64_t read_tcr_el1() {
-    uint64_t ret;
-    asm (
-        "mrs %[ret], TCR_EL1"
-        : [ret] "=r" (ret)
-    );
-    return ret;
-}
-
-inline void write_tcr_el1(uint64_t val) {
-    asm (
-        "msr TCR_EL1, %[v]"
-        :
-        : [v] "r" (val)
-    );
-}
-
-inline uint64_t read_ttbr0_el1() {
-    uint64_t ret;
-    asm (
-        "mrs %[ret], TTBR0_EL1"
-        : [ret] "=r" (ret)
-    );
-    return ret;
-}
-
-inline void write_ttbr0_el1(uint64_t val) {
-    asm (
-        "msr TTBR0_EL1, %[v]"
-        :
-        : [v] "r" (val)
-    );
-}
-
 void vm_init() {
-    uint64_t tcr = read_tcr_el1();
+    uint64_t tcr;
+    READ_SYS_REG(tcr_el1, tcr);
     tcr &= ~0b111111;
     tcr |= 34;
-    write_tcr_el1(tcr);
+    WRITE_SYS_REG(tcr_el1, tcr);
     
     asm("tlbi vmalle1");
     asm("dsb sy");

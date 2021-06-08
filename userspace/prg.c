@@ -1,21 +1,24 @@
 
 const char test[] = "Hello from userspace!\n";
-int a = 10;
-int c[5];
+int a = 12;
+int c[5000];
 
 int sqr(int a) {
     return a*a;
 }
 
 int main() {
-
-    c[1] = sqr(a);
-
     asm(
-        "mov x0, %[p]"
+        "mov x0, %[x]"
         :
-        : [p] "r" (test)
+        : [x] "r" (test)
     );
     asm("svc 30");
+    c[4000] = sqr(a);
+    asm(
+        "mov x0, %[x]"
+        :
+        : [x] "r" (c[4000])
+    );
     for(;;);
 }

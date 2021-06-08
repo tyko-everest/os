@@ -11,3 +11,7 @@ _bss_loop:
     blt _bss_loop
     
     b main
+
+.rept 4000
+    nop
+.endr
