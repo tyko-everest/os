@@ -1,15 +1,6 @@
 #include "proc.h"
 
-/**
- * Known issues:
- * - first memory segment is always one page long as the check for whether to
- * merge two segments does not work for the initial loop
- */
-
-static process_t procs[16];
-static process_t curr_pid;
-
-int proc_load(const char *path, process_t *proc) {
+int proc_load_new(const char *path, process_t *proc) {
     elf64_header_t elf_header;
     elf64_prog_header_t prog_header[2];
     int a = parse_elf(path, &elf_header, prog_header);
@@ -66,11 +57,6 @@ int proc_load(const char *path, process_t *proc) {
                 next_seg->virt_addr = (void *) prog_header[ph].p_vaddr + page * VM_PAGE_SIZE;
                 next_seg->size = VM_PAGE_SIZE;
 
-                // for now only handle allocating one page
-                if (next_seg->size > 0x1000) {
-                    while(1);
-                }
-
                 next_seg->phys_addr = pm_get_page();
                 if (next_seg->phys_addr == 0) {
                     while(1);
@@ -94,11 +80,11 @@ int proc_load(const char *path, process_t *proc) {
                 // transfer contents of elf file into memory
 
                 // temporarily map this section with kernel RW permissions so it can copy the memory
-                vm_allocate_page(next_seg->virt_addr, next_seg->phys_addr, VM_ATTR_INDEX(0) | VM_ACCESS_FLAG | VM_SHARE_INNER | VM_KERNEL_RW, proc->sys_regs.ttbr0_el1);
+                vm_map_page(next_seg->virt_addr, next_seg->phys_addr, VM_ATTR_INDEX(0) | VM_ACCESS_FLAG | VM_SHARE_INNER | VM_KERNEL_RW, proc->sys_regs.ttbr0_el1);
                 // now copy the contents of this program data to memory
-                fat32_readfile(path, prog_header[ph].p_offset + page * VM_PAGE_SIZE, prog_header[ph].p_filesz % VM_PAGE_SIZE, next_seg->virt_addr);
+                readfile(path, prog_header[ph].p_offset + page * VM_PAGE_SIZE, prog_header[ph].p_filesz % VM_PAGE_SIZE, next_seg->virt_addr);
                 // set the correct VM attributes for the page
-                vm_allocate_page(next_seg->virt_addr, next_seg->phys_addr, next_seg->attribs, proc->sys_regs.ttbr0_el1);
+                vm_map_page(next_seg->virt_addr, next_seg->phys_addr, next_seg->attribs, proc->sys_regs.ttbr0_el1);
 
                 // check if we just created a continuous memory section
                 // if so merge the two sections
@@ -121,30 +107,37 @@ int proc_load(const char *path, process_t *proc) {
     proc->mem = dummy_seg->next;
     kfree(dummy_seg);
 
-    return 0;
+    proc->stack = kmalloc(sizeof(proc_mem_seg_t));
+    proc->stack->attribs = VM_ACCESS_FLAG | VM_SHARE_INNER | VM_USER_RW | VM_EL0_EXEC_DISABLE;
+    proc->stack->virt_addr = (1 << 30) - VM_PAGE_SIZE;
+    proc->stack->phys_addr = pm_get_page();
+    proc->stack->size = VM_PAGE_SIZE;
+    proc->stack->next = NULL;
+    vm_map_page(proc->stack->virt_addr, proc->stack->phys_addr, proc->stack->attribs, proc->sys_regs.ttbr0_el1);
+
 }
 
-void proc_start(const process_t *proc) {
+int proc_load_existing(process_t *proc) {
 
-    // // load program and data memory
-    // proc_mem_seg_t *cur_seg = proc->mem;
-    // while (cur_seg != NULL) {
-    //     vm_allocate_page(cur_seg->virt_addr, cur_seg->phys_addr, cur_seg->attribs, proc->sys_regs.ttbr0_el1);
-    //     cur_seg = cur_seg->next;
-    // }
+    proc_mem_seg_t *cur_seg = proc->mem;
+    while (cur_seg != NULL) {
+        for (size_t i = 0; i < CEIL(cur_seg->size, VM_PAGE_SIZE); i++) {
+            vm_map_page((void*) ((uintptr_t) cur_seg->virt_addr + VM_PAGE_SIZE * i), cur_seg->phys_addr + VM_PAGE_SIZE * i, cur_seg->attribs, proc->sys_regs.ttbr0_el1);
+        }
+        cur_seg = cur_seg->next;
+    }
 
-    // load in stack
-    uintptr_t phys_stack = pm_get_page();
-    if (phys_stack == 0)
-        while(1);
-    // load the stack TODO, decide where this is best put
-    uint64_t attribs = VM_ACCESS_FLAG | VM_SHARE_INNER | VM_USER_RW | VM_EL0_EXEC_DISABLE;
-    vm_allocate_page((1 << 30) - 0x1000, phys_stack, attribs, proc->sys_regs.ttbr0_el1);
+    cur_seg = proc->stack;
+    while (cur_seg != NULL) {
+        for (size_t i = 0; i < CEIL(cur_seg->size, VM_PAGE_SIZE); i++) {
+            vm_map_page((void*) ((uintptr_t) cur_seg->virt_addr + VM_PAGE_SIZE * i), cur_seg->phys_addr + VM_PAGE_SIZE * i, cur_seg->attribs, proc->sys_regs.ttbr0_el1);
+        }
+        cur_seg = cur_seg->next;
+    }
 
     WRITE_SYS_REG(spsr_el1, proc->sys_regs.spsr_el1);
     WRITE_SYS_REG(sp_el0, proc->sys_regs.sp_el0);
     WRITE_SYS_REG(elr_el1, proc->sys_regs.elr_el1);
     WRITE_SYS_REG(ttbr0_el1, proc->sys_regs.ttbr0_el1);
     asm("eret");
-
 }

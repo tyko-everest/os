@@ -9,8 +9,8 @@
 #include "system/vfs.h"
 #include "utils/elf.h"
 
-// used to store where a program is stored in phys memory
-// and where these segments need to be loaded into virt memory
+// stores the mapping between physical and virtual memory for the process
+// also stores the attributes it needs in the mmu
 struct proc_mem_seg {
     uintptr_t phys_addr;
     void *virt_addr;
@@ -19,6 +19,17 @@ struct proc_mem_seg {
     struct proc_mem_seg *next;
 };
 typedef struct proc_mem_seg proc_mem_seg_t;
+
+// stores the mapping of the stack in physical memory
+// since the stack is continuous and always starts at the same place
+// only the physical address is stored
+// the attributes are also always user RW, no execution
+struct stack_mem_seg {
+    uintptr_t phys_addr;
+    size_t size;
+    struct stack_mem_seg *next;
+};
+typedef struct stack_mem_seg stack_mem_seg_t;
 
 typedef struct {
     uint64_t x[32];
@@ -35,6 +46,7 @@ typedef struct {
 typedef struct {
     size_t pid;
     proc_mem_seg_t *mem;
+    proc_mem_seg_t *stack;
     general_regs_t gp_regs;
     system_regs_t sys_regs;
     int errno;
@@ -43,7 +55,7 @@ typedef struct {
 
 int add_fd_entry(const char *path);
 
-int proc_load(const char *path, process_t *proc);
-void proc_start(const process_t *proc);
+int proc_load_new(const char *path, process_t *proc);
+int proc_load_existing(process_t *proc);
 
 #endif

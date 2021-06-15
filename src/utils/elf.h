@@ -3,7 +3,7 @@
 
 #include "clib/stdint.h"
 #include "clib/string.h"
-#include "system/fat32.h"
+#include "system/vfs.h"
 #include "utils/macros.h"
 
 // size of e_ident array

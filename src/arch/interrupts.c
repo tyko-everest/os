@@ -24,7 +24,7 @@ void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg) {
     case INT_CURR_EL_SPx | INT_SRC_Sync:
     case INT_LOW_EL_64 | INT_SRC_Sync:
 
-        // which synchronous execptionc code was given
+        // which synchronous exception code was given
         switch (get_ec(esr)) {
         case EC_SVC64:
             syscall = get_iss(esr) & 0xFFFF;

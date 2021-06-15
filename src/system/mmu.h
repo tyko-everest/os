@@ -61,7 +61,7 @@ uintptr_t vm_new_ttb();
  * @param ttb the physical address of the translation table base
  * @return 0 on success, negative on error
  */
-int vm_allocate_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs, uintptr_t ttb);
+int vm_map_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs, uintptr_t ttb);
 
 
 

@@ -20,7 +20,7 @@ uintptr_t vm_new_ttb() {
     return ttb;
 }
 
-int vm_allocate_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs, uintptr_t ttb) {
+int vm_map_page(void *virt_addr, uintptr_t phys_addr, uint64_t attribs, uintptr_t ttb) {
 
     // since kernel is flat mapped, converting PM to kernel VM addresses
     // is simply addition

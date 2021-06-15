@@ -26,8 +26,8 @@ int main() {
     printf("\nprintf initialized\n");
     kheap_init();
     printf("kernel heap initialized\n");
-    fat32_init();
-    printf("fat32 initialized\n");
+    vfs_init();
+    printf("vfs initialized\n");
     pm_init();
     printf("phys memory initialized\n");
     vm_init();
@@ -35,8 +35,8 @@ int main() {
 
     const char path[] = "/PRG";
     process_t proc;
-    proc_load(path, &proc);
-    proc_start(&proc);
+    proc_load_new(path, &proc);
+    proc_load_existing(&proc);
 
     printf("looping forever...\n");
     for(;;);
