@@ -1,6 +1,18 @@
 #include "proc.h"
 
-int proc_load_new(const char *path, process_t *proc) {
+/**
+ * TODO
+ * 
+ * - rethink how the functions are layed out
+ * - instead of using proc_load_new or proc_load_existing maybe have one just load the struct 
+ */
+
+/**
+ * Given the path to a program will load its contents into memory, save the mapping,
+ * and setup things like the system registers to initial values for a new process
+ * i.e. stack point at 1GB, elr_el1 at the programs entry, etc.
+ */
+int proc_new(const char *path, process_t *proc) {
     elf64_header_t elf_header;
     elf64_prog_header_t prog_header[2];
     int a = parse_elf(path, &elf_header, prog_header);
@@ -117,7 +129,10 @@ int proc_load_new(const char *path, process_t *proc) {
 
 }
 
-int proc_load_existing(process_t *proc) {
+/**
+ * Setup the memory mapping for the given process
+ */
+int proc_load(const process_t *proc) {
 
     proc_mem_seg_t *cur_seg = proc->mem;
     while (cur_seg != NULL) {
@@ -135,9 +150,18 @@ int proc_load_existing(process_t *proc) {
         cur_seg = cur_seg->next;
     }
 
+}
+
+/**
+ * Sets the system registers to those of a given process and flushes the tlb.
+ * After calling this function eret will switch execution to the given process
+ */
+void proc_switch(const process_t* proc) {
     WRITE_SYS_REG(spsr_el1, proc->sys_regs.spsr_el1);
     WRITE_SYS_REG(sp_el0, proc->sys_regs.sp_el0);
     WRITE_SYS_REG(elr_el1, proc->sys_regs.elr_el1);
     WRITE_SYS_REG(ttbr0_el1, proc->sys_regs.ttbr0_el1);
-    asm("eret");
+    asm("tlbi vmalle1");
+    asm("dsb sy");
+    asm("isb");
 }

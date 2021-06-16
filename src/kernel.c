@@ -11,14 +11,6 @@
 #include "system/syscall.h"
 #include "utils/elf.h"
 
-extern void * __files_start;
-
-uint32_t _get_sctlr();
-
-ssize_t read(const char *path, void *buf, size_t count, size_t from) {
-    asm("svc 0");
-}
-
 int main() {
 
     serial_init();
@@ -35,8 +27,9 @@ int main() {
 
     const char path[] = "/PRG";
     process_t proc;
-    proc_load_new(path, &proc);
-    proc_load_existing(&proc);
+    proc_new(path, &proc);
+    proc_switch(&proc);
+    asm("eret");
 
     printf("looping forever...\n");
     for(;;);

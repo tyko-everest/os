@@ -9,22 +9,26 @@ _vector:
 	// current EL with SP0
 .balign 128
 	// synch
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 0
 	b _vector_common
 .balign 128
 	// IRQ
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 1
 	b _vector_common
 .balign 128
 	// FIQ
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 2
 	b _vector_common
 .balign 128
 	// SError
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 3
 	b _vector_common
 
@@ -37,61 +41,72 @@ _vector:
 	b _vector_common
 .balign 128
 	// IRQ
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 5
 	b _vector_common
 .balign 128
 	// FIQ
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 6
 	b _vector_common
 .balign 128
 	// SError
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 7
 	b _vector_common
 
 	// lower EL with AArch64
 .balign 128
 	// synch
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 8
 	b _vector_common
 .balign 128
 	// IRQ
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 9
 	b _vector_common
 .balign 128
 	// FIQ
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 10
 	b _vector_common
 .balign 128
 	// SError
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 11
 	b _vector_common
 
 	// lower EL with AArch32
 .balign 128
 	// synch
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 12
 	b _vector_common
 .balign 128
 	// IRQ
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 13
 	b _vector_common
 .balign 128
 	// FIQ
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 14
 	b _vector_common
 .balign 128
 	// SError
-	stp x0, x1, [sp, -16]!
+	sub sp, sp, reg_stack_frame
+	stp x0, x1, [sp]
 	mov x0, 15
 	b _vector_common
 

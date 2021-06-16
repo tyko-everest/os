@@ -20,17 +20,6 @@ struct proc_mem_seg {
 };
 typedef struct proc_mem_seg proc_mem_seg_t;
 
-// stores the mapping of the stack in physical memory
-// since the stack is continuous and always starts at the same place
-// only the physical address is stored
-// the attributes are also always user RW, no execution
-struct stack_mem_seg {
-    uintptr_t phys_addr;
-    size_t size;
-    struct stack_mem_seg *next;
-};
-typedef struct stack_mem_seg stack_mem_seg_t;
-
 typedef struct {
     uint64_t x[32];
     struct {uint64_t low; uint64_t high;} v[32];
@@ -50,12 +39,12 @@ typedef struct {
     general_regs_t gp_regs;
     system_regs_t sys_regs;
     int errno;
-
 } process_t;
 
 int add_fd_entry(const char *path);
 
-int proc_load_new(const char *path, process_t *proc);
-int proc_load_existing(process_t *proc);
+int proc_new(const char *path, process_t *proc);
+int proc_load(const process_t *proc);
+void proc_switch(const process_t* proc);
 
 #endif

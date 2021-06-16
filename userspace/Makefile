@@ -7,13 +7,16 @@ C_INC := -Isrc
 PRG: prg.c start.s
 	$(CC) $(CFLAGS) $(C_INC) $^ -o $@
 
-add_to_fs: PRG
+PRG2: prg2.c start.s
+	$(CC) $(CFLAGS) $(C_INC) $^ -o $@
+
+add_to_fs: PRG PRG2
 	make -C ../test_fs mount
-	sudo cp PRG ../test_fs/zzz
+	sudo cp $^ ../test_fs/zzz
 	make -C ../test_fs umount
 
 clean:
-	rm PRG
+	rm PRG*
 
 print: PRG
 	aarch64-none-elf-objdump -p PRG

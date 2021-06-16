@@ -5,4 +5,6 @@
 #include "clib/stdint.h"
 #include "system/proc.h"
 
+void yield();
+
 #endif

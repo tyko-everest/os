@@ -17,7 +17,6 @@ void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg) {
     printf("interrupt -> source: %d, esr: 0x%X, elr: 0x%X\n", source, esr, elr);
 
     size_t syscall;
-    ssize_t sys_return;
 
     // which entry in the vector table did this come from
     switch (source) {
@@ -33,7 +32,11 @@ void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg) {
             // route to the proper syscall
             switch (syscall) {
             case SYS_READ:
-                sys_return = sys_read((const char *) reg->x[0], (char *) reg->x[1], (size_t) reg->x[2], (size_t) reg->x[3]);
+                reg->x[0] = sys_read((const char *) reg->x[0], (char *) reg->x[1], (size_t) reg->x[2], (size_t) reg->x[3]);
+                break;
+
+            case SYS_EXEC:
+                sys_exec((const char *) reg->x[0]);
                 break;
             
             case SYS_PRINT:
@@ -45,7 +48,6 @@ void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg) {
                 for(;;);
                 break;
             }
-            reg->x[0] = sys_return;
             break;
         
         default:
