@@ -1,6 +1,7 @@
 #ifndef INCLUDE_SYSCALL_H
 #define INCLUDE_SYSCALL_H
 
+#include "arch/arm.h"
 #include "clib/stddef.h"
 #include "clib/string.h"
 #include "system/kheap.h"
@@ -18,7 +19,10 @@ typedef enum {
 
     SYS_FORK    = 20,
     SYS_EXEC    = 21,
-    SYS_EXIT    = 22,
+    // this syscall is like exec, but starts a new process instead of replacing the current one
+    // used for testing with the single-tasking scheduler
+    SYS_START   = 22,
+    SYS_EXIT    = 23,
 
     SYS_PRINT   = 30,
     SYS_INPUT   = 31
@@ -30,6 +34,8 @@ ssize_t sys_make(const char *path, bool is_dir);
 ssize_t sys_delete(const char *path);
 
 void sys_exec(const char *path);
+void sys_start(const char *path, general_regs_t *regs);
+void sys_exit(general_regs_t *regs);
 
 void sys_print(const char *str);
 

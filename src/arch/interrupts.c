@@ -42,6 +42,14 @@ void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg) {
                 sys_exec((const char *) reg->x[0]);
                 break;
             
+            case SYS_START:
+                sys_start((const char *) reg->x[0], reg);
+                break;
+            
+            case SYS_EXIT:
+                sys_exit(reg);
+                break;
+
             case SYS_PRINT:
                 sys_print((const char *) reg->x[0]);
                 break;

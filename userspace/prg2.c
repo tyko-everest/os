@@ -10,12 +10,14 @@ int main() {
     );
     asm("svc 30");
 
-    asm(
-        "mov x0, %[x]"
-        :
-        : [x] "r" (path)
-    );
-    asm("svc 21");
+    // asm(
+    //     "mov x0, %[x]"
+    //     :
+    //     : [x] "r" (path)
+    // );
+    // asm("svc 21");
+
+    asm("svc 23");
     
     for(;;);
 }

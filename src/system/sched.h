@@ -5,6 +5,7 @@
 #include "clib/stdint.h"
 #include "system/proc.h"
 
+void sched_start();
 void yield();
 
 #endif

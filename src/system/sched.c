@@ -1,7 +1,12 @@
 #include "sched.h"
 
-static process_t procs[16];
-static process_t curr_pid;
+
+
+void sched_start() {
+    size_t pid = proc_new("/PRG");
+    proc_switch(pid);
+    asm("eret");
+}
 
 void yield() {
     

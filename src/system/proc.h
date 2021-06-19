@@ -33,7 +33,7 @@ typedef struct {
 } system_regs_t;
 
 typedef struct {
-    size_t pid;
+    size_t pid, parent;
     proc_mem_seg_t *mem;
     proc_mem_seg_t *stack;
     general_regs_t gp_regs;
@@ -41,10 +41,13 @@ typedef struct {
     int errno;
 } process_t;
 
-int add_fd_entry(const char *path);
+size_t get_curr_pid();
+size_t get_parent(size_t pid);
+void get_gp_regs(size_t pid, general_regs_t *gp_regs);
+void save_regs(general_regs_t *gp_rgs, system_regs_t *sys_regs);
 
-int proc_new(const char *path, process_t *proc);
-int proc_load(const process_t *proc);
-void proc_switch(const process_t* proc);
+int proc_new(const char *path);
+int proc_load(size_t pid);
+void proc_switch(size_t pid);
 
 #endif

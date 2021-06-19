@@ -8,6 +8,7 @@
 #include "system/pm.h"
 #include "system/proc.h"
 #include "system/mmu.h"
+#include "system/sched.h"
 #include "system/syscall.h"
 #include "utils/elf.h"
 
@@ -25,13 +26,11 @@ int main() {
     vm_init();
     printf("virt memory initialized\n");
 
-    const char path[] = "/PRG";
-    process_t proc;
-    proc_new(path, &proc);
-    proc_switch(&proc);
-    asm("eret");
-
-    printf("looping forever...\n");
+    
+    printf("invoking scheduler\n");
+    sched_start();
+    
+    printf("proc 1 exited, looping forever...\n");
     for(;;);
     return 0;
 }
