@@ -9,18 +9,30 @@
  */
 
 ssize_t sys_read(const char *path, void *buf, size_t count, size_t from) {
+    if ((uintptr_t) buf + count >= VM_USERSPACE_SIZE || (uintptr_t) path > VM_USERSPACE_SIZE) {
+        return -1;
+    }
     return readfile(path, from, count, buf);
 }
 
 ssize_t sys_write(const char *path, void *buf, size_t count, size_t from) {
+    if ((uintptr_t) buf + count >= VM_USERSPACE_SIZE || (uintptr_t) path > VM_USERSPACE_SIZE) {
+        return -1;
+    }
     return writefile(path, from, count, buf);
 }
 
 ssize_t sys_make(const char *path, bool is_dir) {
+    if ((uintptr_t) path > VM_USERSPACE_SIZE) {
+        return -1;
+    }
     return makefile(path, is_dir);
 }
 
 ssize_t sys_delete(const char *path) {
+    if ((uintptr_t) path > VM_USERSPACE_SIZE) {
+        return -1;
+    }
     return deletefile(path);
 }
 

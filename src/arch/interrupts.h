@@ -1,6 +1,7 @@
 #ifndef INCLUDE_INTERRUPTS_H
 #define INCLUDE_INTERRUPTS_H
 
+#include "drivers/mmio.h"
 #include "clib/stddef.h"
 #include "clib/stdint.h"
 #include "system/proc.h"

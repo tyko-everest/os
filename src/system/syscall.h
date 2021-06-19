@@ -4,6 +4,7 @@
 #include "clib/stddef.h"
 #include "clib/string.h"
 #include "system/kheap.h"
+#include "system/mmu.h"
 #include "system/proc.h"
 #include "system/vfs.h"
 

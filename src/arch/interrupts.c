@@ -14,9 +14,12 @@ void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg) {
         "mrs %[elr], ELR_EL1"
         : [elr] "=r" (elr)
     );
+    #ifdef DEBUG
     printf("interrupt -> source: %d, esr: 0x%X, elr: 0x%X\n", source, esr, elr);
+    #endif
 
     size_t syscall;
+    uint32_t stat;
 
     // which entry in the vector table did this come from
     switch (source) {
@@ -56,6 +59,25 @@ void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg) {
             break;
         }
         
+        break;
+
+    case INT_CURR_EL_SPx | INT_SRC_IRQ:
+    case INT_LOW_EL_64 | INT_SRC_IRQ:
+        // this is currently not checking for which kind of IRQ we got
+        // only enabled one is the UART at the moment
+        #ifdef DEBUG
+        printf("got IRQ\n");
+        #endif
+        stat = mmio_read(AUX_MU_STAT_REG);
+        size_t rec = (stat >> 16) & 0xF;
+        while (rec > 0) {
+            char c = mmio_read(AUX_MU_IO_REG);
+            if (c == '\r') {
+                c = '\n';
+            }
+            printf("%c", c);
+            rec--;
+        }
         break;
     
     default:

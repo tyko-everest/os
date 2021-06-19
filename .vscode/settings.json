@@ -13,6 +13,8 @@
         "stdint.h": "c",
         "cstdio": "c",
         "registers.h": "c",
-        "interrupts.h": "c"
+        "interrupts.h": "c",
+        "serial.h": "c",
+        "elf.h": "c"
     }
 }

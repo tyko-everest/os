@@ -18,6 +18,13 @@ void serial_init() {
     // mmio_write(AUX_MU_MCR_REG, 0);
     mmio_write(AUX_MU_BAUD_REG, 270);
     // mmio_write(AUX_MU_CNTL_REG, 0b11);
+
+    // clear the receive buffer before interrupts are enabled
+    mmio_write(AUX_MU_IIR_REG, 1 << 1);
+    // setup interrupts for serial receive
+    // THE DATASHEET IS WRONG, it has transmit and recieve IRQs bits flipped
+    mmio_write(AUX_MU_IER_REG, 1 << 0);
+    mmio_write(ENABLE_IRQS1, 1 << 29);
 }
 
 void serial_putc(void* p, char c) {

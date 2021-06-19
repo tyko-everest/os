@@ -24,6 +24,8 @@
 #include "system/pm.h"
 #include "utils/printf.h"
 
+#define VM_USERSPACE_SIZE (1 << 30)
+
 #define VM_LOG_PAGE_SIZE 12
 #define VM_PAGE_SIZE (1 << VM_LOG_PAGE_SIZE)
 

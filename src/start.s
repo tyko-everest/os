@@ -34,6 +34,7 @@ _bss_loop:
 	msr VBAR_EL1, x0
 
 	// setup saved mode as EL1, using SP_EL1
+	// interrupts will be disabled in EL1 
 	ldr x0, =0x000003c5
 	msr SPSR_EL2, x0
 	// set "return point" to just below after eret

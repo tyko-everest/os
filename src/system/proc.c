@@ -34,7 +34,7 @@ int proc_new(const char *path, process_t *proc) {
     proc->pid = 1;
 
     proc->sys_regs.elr_el1 = elf_header.e_entry;
-    proc->sys_regs.sp_el0 = (1 << 30);
+    proc->sys_regs.sp_el0 = VM_USERSPACE_SIZE;
     proc->sys_regs.spsr_el1 = 0;
     proc->sys_regs.ttbr0_el1 = vm_new_ttb();
 
@@ -55,7 +55,7 @@ int proc_new(const char *path, process_t *proc) {
         // check if this needs to be loaded, and if it will be loaded
         // below 1 GB
         if (prog_header[ph].p_type == EPT_LOAD &&
-            prog_header[ph].p_vaddr + prog_header[ph].p_memsz <= (1 << 30)) {
+            prog_header[ph].p_vaddr + prog_header[ph].p_memsz <= VM_USERSPACE_SIZE) {
 
             for (size_t page = 0; page < CEIL(prog_header[ph].p_memsz, VM_PAGE_SIZE); page++) {
             
@@ -121,7 +121,7 @@ int proc_new(const char *path, process_t *proc) {
 
     proc->stack = kmalloc(sizeof(proc_mem_seg_t));
     proc->stack->attribs = VM_ACCESS_FLAG | VM_SHARE_INNER | VM_USER_RW | VM_EL0_EXEC_DISABLE;
-    proc->stack->virt_addr = (1 << 30) - VM_PAGE_SIZE;
+    proc->stack->virt_addr = VM_USERSPACE_SIZE - VM_PAGE_SIZE;
     proc->stack->phys_addr = pm_get_page();
     proc->stack->size = VM_PAGE_SIZE;
     proc->stack->next = NULL;

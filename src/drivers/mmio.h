@@ -8,6 +8,14 @@ typedef enum {
     PERIPH_BASE =           0xFFFFFF807F000000,
     // PERIPH_BASE =           0x3F000000,
 
+    INT_BASE =              PERIPH_BASE + 0xB000,
+    IRQ_BASIC_PENDING =     INT_BASE + 0x200,
+    IRQ_PENDING_1 =         INT_BASE + 0x204,
+    IRQ_PENDING_2 =         INT_BASE + 0x208,
+    // ...
+    ENABLE_IRQS1 =          INT_BASE + 0x210,
+    // ...
+
     GPIO_BASE =             PERIPH_BASE + 0x200000,
     GPFSEL0 =               GPIO_BASE + 0x00,
     GPFSEL1 =               GPIO_BASE + 0x04,

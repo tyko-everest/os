@@ -70,6 +70,8 @@ void *kmalloc(size_t bytes) {
     }
     // if we made it all the way out here that means we never found
     // a suitable segment
+    printf("heap ran out of memory!\n");
+    while(1);
     return NULL;
 }
 
