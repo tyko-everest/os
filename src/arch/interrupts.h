@@ -24,6 +24,4 @@ typedef enum {
     EC_SVC64    = 0b010101,
 } int_ec_t;
 
-void interrupt_handler(uint64_t source, uint64_t esr, general_regs_t *reg);
-
 #endif

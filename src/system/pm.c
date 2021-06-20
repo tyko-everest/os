@@ -58,11 +58,67 @@ uintptr_t pm_get_page() {
     return ret_addr;
 }
 
+void pm_free_page(uintptr_t paddr) {
+    // check if this segment exists before the first free segment
+    if (paddr < first_free_segment->addr) {
+        // check if we need a new segment or simply expand the first one back a page
+        if (paddr == first_free_segment->addr - PAGE_SIZE) {
+            first_free_segment->addr -= PAGE_SIZE;
+            first_free_segment->size += PAGE_SIZE;
+        } else {
+            mem_segment_t *new_seg = kmalloc(sizeof(mem_segment_t));
+            first_free_segment->prev = new_seg;
+            new_seg->next = first_free_segment;
+            new_seg->addr = paddr;
+            new_seg->size = PAGE_SIZE;
+            new_seg->prev = NULL;
+            first_free_segment = new_seg;
+        }
+
+    } else {
+        mem_segment_t *curr_seg = first_free_segment;
+
+        // find the last free segment before the given address
+        while (curr_seg->next != NULL && curr_seg->next->addr < paddr) {
+            curr_seg = curr_seg->next;
+        }
+
+        // check if we need to just expand the curr_seg
+        if (curr_seg->addr + curr_seg->size == paddr) {
+            curr_seg->size += PAGE_SIZE;
+        } else {
+            mem_segment_t *new_seg = kmalloc(sizeof(mem_segment_t));
+            new_seg->next = curr_seg->next;
+            new_seg->prev = curr_seg;
+            new_seg->addr = paddr;
+            new_seg->size = PAGE_SIZE;
+            curr_seg->next = new_seg;
+            if (new_seg->next->prev != NULL) {
+                new_seg->next->prev = new_seg;
+            }
+            curr_seg = new_seg;
+        }
+
+        // check if after these adjustments we can merge into the next free segment
+        mem_segment_t *next_seg = curr_seg->next;
+        if (next_seg != NULL && (curr_seg->addr + curr_seg->size == next_seg->addr)) {
+            curr_seg->size += next_seg->size;
+            curr_seg->next = next_seg->next;
+            if (next_seg->next != NULL) {
+                next_seg->next->prev = curr_seg;
+            }
+            kfree(next_seg);
+        }
+    }
+}
+
 void print_free_memory() {
+    printf("free physical memory\n");
     mem_segment_t *curr_seg = first_free_segment;
     while (curr_seg != NULL) {
         printf("segment start: %lX", curr_seg->addr);
         printf("\tsegment end: %lX\n", curr_seg->addr + curr_seg->size - 1);
         curr_seg = curr_seg->next;
     }
+    printf("\n");
 }

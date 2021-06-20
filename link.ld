@@ -39,6 +39,6 @@ SECTIONS {
     __files_end = .;
     . = ALIGN(4096);
     __kernel_heap = .;
-    . += 4096;
+    . += 4096*16;
     __free_mem_start = .;
 }

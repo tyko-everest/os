@@ -28,6 +28,30 @@ void save_regs(general_regs_t *gp_regs, system_regs_t *sys_regs) {
     memcpy(&procs[curr_pid].sys_regs, sys_regs, sizeof(system_regs_t));
 }
 
+// TODO this needs to cleanup the pages used for the translation table as well
+void proc_delete(size_t pid) {
+    process_t proc = procs[pid];
+    proc_mem_seg_t *seg = proc.mem;
+    while (seg != NULL) {
+        for (uintptr_t addr = seg->phys_addr; addr < seg->phys_addr + seg->size; addr += PAGE_SIZE) {
+            pm_free_page(addr);
+        }
+        proc_mem_seg_t *tmp_seg = seg;
+        seg = seg->next;
+        kfree(tmp_seg);
+    }
+    seg = proc.stack;
+    while (seg != NULL) {
+        for (uintptr_t addr = seg->phys_addr; addr < seg->phys_addr + seg->size; addr += PAGE_SIZE) {
+            pm_free_page(addr);
+        }
+        proc_mem_seg_t *tmp_seg = seg;
+        seg = seg->next;
+        kfree(tmp_seg);
+    }
+    vm_delete_ttb(proc.sys_regs.ttbr0_el1);
+}
+
 /**
  * Given the path to a program will load its contents into memory, save the mapping,
  * and setup things like the system registers to initial values for a new process
@@ -144,7 +168,7 @@ int proc_new(const char *path) {
 
     procs[pid].stack = kmalloc(sizeof(proc_mem_seg_t));
     procs[pid].stack->attribs = VM_ACCESS_FLAG | VM_SHARE_INNER | VM_USER_RW | VM_EL0_EXEC_DISABLE;
-    procs[pid].stack->virt_addr = VM_USERSPACE_SIZE - VM_PAGE_SIZE;
+    procs[pid].stack->virt_addr = (void *) (VM_USERSPACE_SIZE - VM_PAGE_SIZE);
     procs[pid].stack->phys_addr = pm_get_page();
     procs[pid].stack->size = VM_PAGE_SIZE;
     procs[pid].stack->next = NULL;

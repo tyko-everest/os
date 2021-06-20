@@ -14,6 +14,8 @@ typedef enum {
     SYS_WRITE   = 1,
     SYS_MAKE    = 2,
     SYS_DELETE  = 3,
+    SYS_OPENDIR = 4,
+    SYS_READDIR = 5,
 
     SYS_BRK     = 10,
 
@@ -27,6 +29,8 @@ typedef enum {
     SYS_PRINT   = 30,
     SYS_INPUT   = 31
 } syscall_no_t;
+
+
 
 ssize_t sys_read(const char *path, void *buf, size_t count, size_t from);
 ssize_t sys_write(const char *path, void *buf, size_t count, size_t from);

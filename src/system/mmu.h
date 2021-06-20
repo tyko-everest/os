@@ -49,9 +49,12 @@ uint64_t read_sctlr_el1();
 
 void vm_init();
 
-// uint32_t get_phys_addr(void* virt_addr);
-
+// allocate a new page for the first level of a translation table
+// and clear the memory so all entries are invalid to start
 uintptr_t vm_new_ttb();
+
+// free all pages associated with a translation table mapping
+void vm_delete_ttb();
 
 /**
  * allocates a page of PM at a desired VM address in userspace

@@ -45,6 +45,7 @@ size_t get_curr_pid();
 size_t get_parent(size_t pid);
 void get_gp_regs(size_t pid, general_regs_t *gp_regs);
 void save_regs(general_regs_t *gp_rgs, system_regs_t *sys_regs);
+void proc_delete(size_t pid);
 
 int proc_new(const char *path);
 int proc_load(size_t pid);

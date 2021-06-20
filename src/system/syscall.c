@@ -72,10 +72,10 @@ void sys_start(const char *path, general_regs_t *gp_regs) {
 }
 
 void sys_exit(general_regs_t *regs) {
-    size_t parent = get_parent(get_curr_pid());
+    size_t pid = get_curr_pid();
+    size_t parent = get_parent(pid);
 
-    // cleanup current proc struct
-    
+    proc_delete(pid);    
     get_gp_regs(parent, regs);
     proc_load(parent);
     proc_switch(parent);
