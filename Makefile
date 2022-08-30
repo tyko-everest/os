@@ -23,7 +23,7 @@ AS_OBJS := $(AS_OBJS:.s=.o)
 
 OBJS = $(C_OBJS) $(AS_OBJS)
 
-QEMU_FLAGS := -M raspi3 -vnc :0 \
+QEMU_FLAGS := -M raspi3b -vnc :0 \
 	-kernel $(BUILD_DIR)/kernel8.img \
 	-serial null -serial stdio
 

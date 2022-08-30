@@ -11,6 +11,3 @@ State of SCR_EL3:
     - bit[10]: EL2 is in aarch64 mode
 
 TLDR: secure monitor and secure mode are disabled, execution should stay in EL2 or lower
-
-
-
