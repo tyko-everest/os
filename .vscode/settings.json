@@ -19,6 +19,5 @@
         "kheap.h": "c"
     },
     "rust-analyzer.cargo.target": "aarch64-unknown-none",
-    "rust-analyzer.checkOnSave.allTargets": false,
-    "rust-analyzer.checkOnSave.target": "aarch64-unknown-none"
+    "rust-analyzer.checkOnSave.allTargets": false
 }

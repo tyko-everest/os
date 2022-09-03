@@ -15,10 +15,9 @@ fn putc(c: u8) {
 }
 
 #[panic_handler]
-fn panic(_panic_info: &PanicInfo) -> ! {
+fn panic(_panic: &PanicInfo<'_>) -> ! {
     loop {}
 }
-
 #[no_mangle]
 pub extern "C" fn main() {
     for c in b"Hello, world!\n" {
