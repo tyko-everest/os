@@ -12,7 +12,8 @@
 #include "system/syscall.h"
 #include "utils/elf.h"
 
-int main() {
+int main()
+{
 
     serial_init();
     init_printf(NULL, serial_putc);
@@ -26,11 +27,11 @@ int main() {
     vm_init();
     printf("virt memory initialized\n");
 
-    
     printf("invoking scheduler\n");
     sched_start();
-    
+
     printf("proc 1 exited, looping forever...\n");
-    for(;;);
+    for (;;)
+        ;
     return 0;
 }

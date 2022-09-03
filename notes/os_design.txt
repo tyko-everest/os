@@ -1,0 +1,34 @@
+Kernel features
+===============================================================================
+
+Virtual memory:
+- all program memory is position independent
+- stack is a fixed size at startup
+- heap does not have to be continuous
+- each process will use a unique ASID
+- no virtual memory will be used twice
+- so no TLB flushing required
+
+Physical memory:
+- first come first serve?
+
+IPC:
+- shared memory
+
+Compute:
+- processes have unique memory regions (excluding shared memory)
+- processes can have multiple threads
+
+
+User space
+===============================================================================
+
+PID 1:
+- 
+
+Drivers:
+- serial
+- storage
+
+Services:
+- file system

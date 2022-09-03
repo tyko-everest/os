@@ -4,6 +4,9 @@ CC := ${PREFIX}-gcc
 CFLAGS := -c -mstrict-align -fpic -ffreestanding -Wall -Wextra -Og -g
 C_INC := -Isrc
 
+RSC := rustc
+RSFLAGS := --target aarch64-unknown-none --crate-type staticlib --emit obj -g
+
 AS := ${PREFIX}-as
 ASFLAGS := -g
 
@@ -17,11 +20,15 @@ C_SRCS := $(wildcard $(SRC_DIR)/**/*.c $(SRC_DIR)/*.c)
 C_OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(C_SRCS))
 C_OBJS := $(C_OBJS:.c=.o)
 
+RS_SRCS := $(wildcard $(SRC_DIR)/**/*.rs $(SRC_DIR)/*.rs)
+RS_OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(RS_SRCS))
+RS_OBJS := $(RS_OBJS:.rs=.o)
+
 AS_SRCS := $(wildcard $(SRC_DIR)/**/*.s $(SRC_DIR)/*.s)
 AS_OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(AS_SRCS))
 AS_OBJS := $(AS_OBJS:.s=.o)
 
-OBJS = $(C_OBJS) $(AS_OBJS)
+OBJS = $(C_OBJS) $(RS_OBJS) $(AS_OBJS)
 
 QEMU_FLAGS := -M raspi3b -vnc :0 \
 	-kernel $(BUILD_DIR)/kernel8.img \
@@ -51,9 +58,13 @@ $(BUILD_DIR)/kernel.elf: $(OBJS) $(BUILD_DIR)/zzz.o
 $(BUILD_DIR)/zzz.o: test_fs/zzz.img
 	${PREFIX}-objcopy --rename-section .data=.zzz -I binary -O elf64-littleaarch64 $< $@
 
-$(BUILD_DIR)/kernel.o: $(SRC_DIR)/kernel.c
+# $(BUILD_DIR)/kernel.o: $(SRC_DIR)/kernel.c
+# 	$(dir_guard)
+# 	$(CC) $(CFLAGS) $(C_INC) $< -o $@
+
+$(BUILD_DIR)/kernel.o: $(SRC_DIR)/kernel.rs
 	$(dir_guard)
-	$(CC) $(CFLAGS) $(C_INC) $< -o $@
+	$(RSC) $(RSFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/%.h
 	$(dir_guard)
