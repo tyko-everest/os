@@ -21,7 +21,7 @@ fn panic(_panic_info: &PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "C" fn main() {
-    for c in b"Hello, world!\n" {
+    for c in b"Hello from Rust!\n" {
         putc(*c);
     }
 }

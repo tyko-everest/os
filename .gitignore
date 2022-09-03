@@ -1,5 +1,6 @@
 /build/
 /test_fs/zzz/
 /target/
+zig-cache/
 *.out
 *.o

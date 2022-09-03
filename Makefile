@@ -7,6 +7,9 @@ C_INC := -Isrc
 RSC := rustc
 RSFLAGS := --target aarch64-unknown-none --crate-type staticlib --emit obj -g
 
+ZIGC := zig build-obj
+ZIGFLAGS := -target aarch64-freestanding-none -isystem src
+
 AS := ${PREFIX}-as
 ASFLAGS := -g
 
@@ -23,6 +26,10 @@ C_OBJS := $(C_OBJS:.c=.o)
 RS_SRCS := $(wildcard $(SRC_DIR)/**/*.rs $(SRC_DIR)/*.rs)
 RS_OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(RS_SRCS))
 RS_OBJS := $(RS_OBJS:.rs=.o)
+
+ZIG_SRCS := $(wildcard $(SRC_DIR)/**/*.zig $(SRC_DIR)/*.zig)
+ZIG_OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(ZIG_SRCS))
+ZIG_OBJS := $(ZIG_OBJS:.zig=.o)
 
 AS_SRCS := $(wildcard $(SRC_DIR)/**/*.s $(SRC_DIR)/*.s)
 AS_OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(AS_SRCS))
@@ -62,9 +69,13 @@ $(BUILD_DIR)/zzz.o: test_fs/zzz.img
 # 	$(dir_guard)
 # 	$(CC) $(CFLAGS) $(C_INC) $< -o $@
 
-$(BUILD_DIR)/kernel.o: $(SRC_DIR)/kernel.rs
+# $(BUILD_DIR)/kernel.o: $(SRC_DIR)/kernel.rs
+# 	$(dir_guard)
+# 	$(RSC) $(RSFLAGS) $< -o $@
+
+$(BUILD_DIR)/kernel.o: $(SRC_DIR)/kernel.zig
 	$(dir_guard)
-	$(RSC) $(RSFLAGS) $< -o $@
+	$(ZIGC) $(ZIGFLAGS) $< -femit-bin=$@
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/%.h
 	$(dir_guard)
