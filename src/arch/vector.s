@@ -147,7 +147,7 @@ _vector_common:
 	mrs x1, ESR_EL1
 	mov x2, sp
 	
-	bl interrupt_handler
+	// bl interrupt_handler
 	
 	ldp x0, x1, [sp]
 	ldp x2, x3, [sp, 16*1]

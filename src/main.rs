@@ -1,5 +1,5 @@
 #![no_std]
-
+#![no_main]
 use core::ffi::c_void;
 use core::panic::PanicInfo;
 
@@ -18,6 +18,10 @@ fn putc(c: u8) {
 fn panic(_panic: &PanicInfo<'_>) -> ! {
     loop {}
 }
+
+#[no_mangle]
+pub extern "C" fn interrupt_handler() {}
+
 #[no_mangle]
 pub extern "C" fn main() {
     for c in b"Hello, world!\n" {
