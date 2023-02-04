@@ -27,8 +27,10 @@ void serial_init() {
     mmio_write(ENABLE_IRQS1, 1 << 29);
 }
 
-void serial_putc(void* p, char c) {
-    (void) p;
-    while (mmio_read(AUX_MU_STAT_REG) & (1 << 5));
-	mmio_write(AUX_MU_IO_REG, c);
+void serial_putc(void *p, char c) {
+    (void)p;
+    while (mmio_read(AUX_MU_STAT_REG) & (1 << 5)) {
+        // nop
+    }
+    mmio_write(AUX_MU_IO_REG, c);
 }

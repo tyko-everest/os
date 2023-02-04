@@ -1,4 +1,5 @@
 .global _vector
+.extern interrupt_handler
 
 .equ reg_stack_frame, 32*8 + 32*16
 
@@ -147,7 +148,8 @@ _vector_common:
 	mrs x1, ESR_EL1
 	mov x2, sp
 	
-	// bl interrupt_handler
+	ldr x3, =interrupt_handler
+	br x3
 	
 	ldp x0, x1, [sp]
 	ldp x2, x3, [sp, 16*1]

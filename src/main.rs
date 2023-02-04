@@ -20,7 +20,11 @@ fn panic(_panic: &PanicInfo<'_>) -> ! {
 }
 
 #[no_mangle]
-pub extern "C" fn interrupt_handler() {}
+pub extern "C" fn interrupt_handler() {
+    for c in b"Interrupt!\n" {
+        putc(*c);
+    }
+}
 
 #[no_mangle]
 pub extern "C" fn main() {

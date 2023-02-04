@@ -12,6 +12,13 @@ fn main() {
         .target("aarch64-unknown-none")
         .files(files)
         .include("src")
+        // .no_default_flags(true)
+        // .flag("-c")
+        // .flag("-mstrict-align")
+        // .flag("-fPIC")
+        // .flag("-ffreestanding")
+        // .static_flag(true)
+        // .shared_flag(true)
         .compile("os-cc");
     for file in files {
         println!("cargo:rerun-if-changed={}", file);
