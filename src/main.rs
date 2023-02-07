@@ -1,7 +1,9 @@
 #![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_main)]
 use core::ffi::c_void;
 use core::panic::PanicInfo;
+
+mod kalloc;
 
 extern "C" {
     pub fn serial_putc(p: *mut c_void, c: u8);
@@ -14,6 +16,7 @@ fn putc(c: u8) {
     }
 }
 
+#[cfg(not(test))]
 #[panic_handler]
 fn panic(_panic: &PanicInfo<'_>) -> ! {
     loop {}
