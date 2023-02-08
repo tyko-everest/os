@@ -15,8 +15,12 @@ struct BitArray<const N: usize> {
 }
 
 impl<const N: usize> BitArray<N> {
-    fn get(&self, index: usize) -> bool {
-        return self.data[index / 64].bit(index % 64);
+    fn get(&self, index: usize) -> Option<bool> {
+        if let Some(num) = self.data.get(index >> 6) {
+            Some(num.bit(index & (64 - 1)))
+        } else {
+            None
+        }
     }
     fn set(&mut self, index: usize, val: bool) {
         self.data[index / 64].set_bit(index % 64, val);
@@ -35,6 +39,36 @@ macro_rules! bit_array_new {
             data: [0; ($num_bits + 63) / 64],
         }
     };
+}
+
+impl<'a, const N: usize> IntoIterator for &'a BitArray<N> {
+    type Item = bool;
+    type IntoIter = BitArrayIter<'a, N>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitArrayIter::new(&self)
+    }
+}
+
+struct BitArrayIter<'a, const N: usize> {
+    bit_array: &'a BitArray<N>,
+    index: usize,
+}
+
+impl<'a, const N: usize> BitArrayIter<'a, N> {
+    fn new(bit_array: &'a BitArray<N>) -> Self {
+        Self {
+            bit_array,
+            index: 0,
+        }
+    }
+}
+
+impl<'a, const N: usize> Iterator for BitArrayIter<'a, N> {
+    type Item = bool;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.bit_array.get(self.index)
+    }
 }
 
 fn round_num_up(num: usize, interval: usize) -> usize {
@@ -70,6 +104,9 @@ unsafe impl GlobalAlloc for KernelAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let size = round_to_bucket(layout.size());
         let align = round_to_bucket(layout.align());
+
+        if size <= 8 {}
+
         todo!()
     }
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
@@ -79,6 +116,7 @@ unsafe impl GlobalAlloc for KernelAllocator {
     }
 }
 
+#[cfg(not(test))]
 #[global_allocator]
 static ALLOCATOR: KernelAllocator = KernelAllocator {
     data: UnsafeCell::new([0; HEAP_SIZE]),
@@ -92,11 +130,11 @@ static ALLOCATOR: KernelAllocator = KernelAllocator {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn bit_array() {
-    //     let mut bit_array = bit_array_new!(256);
-    //     assert_eq!(false, bit_array.get(100));
-    //     bit_array.set(100, true);
-    //     assert_eq!(true, bit_array.get(100));
-    // }
+    #[test]
+    fn bit_array() {
+        let mut bit_array = bit_array_new!(256);
+        assert_eq!(false, bit_array.get(100).unwrap());
+        bit_array.set(100, true);
+        assert_eq!(true, bit_array.get(100).unwrap());
+    }
 }

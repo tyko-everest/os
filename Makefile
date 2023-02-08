@@ -14,6 +14,6 @@ $(BUILD_DIR)/kernel8.img: $(BUILD_DIR)/os
 	rust-objcopy -O binary $< $@
 
 $(BUILD_DIR)/os:
-	cargo build
+	cargo build --target=aarch64-unknown-none
 
 .PHONY: run debug
