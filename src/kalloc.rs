@@ -1,8 +1,7 @@
 use core::alloc::{GlobalAlloc, Layout};
 use core::cell::UnsafeCell;
-use core::cmp::max;
 use core::option::Option;
-use core::ptr::{null, null_mut};
+use core::ptr::null_mut;
 use intbits::Bits;
 
 const PG_SIZE: usize = 4096;
@@ -74,8 +73,9 @@ impl<'a, const N: usize> BitArrayIter<'a, N> {
 impl<'a, const N: usize> Iterator for BitArrayIter<'a, N> {
     type Item = bool;
     fn next(&mut self) -> Option<Self::Item> {
+        let bit = self.bit_array.get(self.index);
         self.index += 1;
-        self.bit_array.get(self.index)
+        bit
     }
 }
 
@@ -189,7 +189,7 @@ unsafe impl GlobalAlloc for KernelAllocator {
     }
 }
 
-// #[cfg(not(test))]
+#[cfg(not(test))]
 #[global_allocator]
 static ALLOCATOR: KernelAllocator = KernelAllocator {
     data: UnsafeCell::new([0; HEAP_SIZE]),
