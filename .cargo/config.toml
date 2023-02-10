@@ -1,2 +1,8 @@
+[build]
+target = "x86_64-unknown-linux-gnu"
+
 [target.aarch64-unknown-none]
 rustflags = ["-C", "link-arg=-Tlink.ld"]
+
+[unstable]
+build-std = ["core", "alloc", "std"] # need to also build std for testing

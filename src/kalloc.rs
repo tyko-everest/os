@@ -1,6 +1,8 @@
 use core::alloc::{GlobalAlloc, Layout};
 use core::cell::UnsafeCell;
-use core::ptr::null_mut;
+use core::cmp::max;
+use core::option::Option;
+use core::ptr::{null, null_mut};
 use intbits::Bits;
 
 const PG_SIZE: usize = 4096;
@@ -24,6 +26,11 @@ impl<const N: usize> BitArray<N> {
     }
     fn set(&mut self, index: usize, val: bool) {
         self.data[index / 64].set_bit(index % 64, val);
+    }
+    fn set_range(&mut self, start: usize, end: usize, val: bool) {
+        for index in start..=end {
+            self.set(index, val);
+        }
     }
 }
 
@@ -67,33 +74,34 @@ impl<'a, const N: usize> BitArrayIter<'a, N> {
 impl<'a, const N: usize> Iterator for BitArrayIter<'a, N> {
     type Item = bool;
     fn next(&mut self) -> Option<Self::Item> {
+        self.index += 1;
         self.bit_array.get(self.index)
     }
 }
 
-fn round_num_up(num: usize, interval: usize) -> usize {
-    return (num + interval - 1) & !(interval - 1);
+fn round_up(num: usize, interval: usize) -> usize {
+    (num + interval - 1) & !(interval - 1)
 }
 
-fn round_to_bucket(size: usize) -> usize {
-    if size <= 8 {
-        round_num_up(size, 8)
-    } else if size <= 64 {
-        round_num_up(size, 64)
-    } else if size <= 512 {
-        round_num_up(size, 512)
+fn round_to_bucket(num: usize) -> usize {
+    if num <= 8 {
+        8
+    } else if num <= 64 {
+        64
+    } else if num <= 512 {
+        512
     } else {
-        round_num_up(size, 4096)
+        round_up(num, 4096)
     }
 }
 
 #[repr(C, align(4096))]
 struct KernelAllocator {
     data: UnsafeCell<[u8; HEAP_SIZE]>,
-    free8: bit_array_type!(HEAP_SIZE / 8),
-    free64: bit_array_type!(HEAP_SIZE / 64),
-    free512: bit_array_type!(HEAP_SIZE / 512),
-    free4096: bit_array_type!(HEAP_SIZE / 4096),
+    free8: UnsafeCell<bit_array_type!(HEAP_SIZE / 8)>,
+    free64: UnsafeCell<bit_array_type!(HEAP_SIZE / 64)>,
+    free512: UnsafeCell<bit_array_type!(HEAP_SIZE / 512)>,
+    free4096: UnsafeCell<bit_array_type!(HEAP_SIZE / 4096)>,
 }
 
 unsafe impl Sync for KernelAllocator {}
@@ -102,32 +110,99 @@ unsafe impl Sync for KernelAllocator {}
 // always round up to the nearest size on alloc/dealloc
 unsafe impl GlobalAlloc for KernelAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let size = round_to_bucket(layout.size());
-        let align = round_to_bucket(layout.align());
+        let align = layout.align();
+        if align > MAX_ALIGN {
+            return null_mut();
+        }
+        let align = round_to_bucket(align);
+        let size = round_up(layout.size(), align);
 
-        if size <= 8 {}
-
-        todo!()
+        if align == 8 {
+            let mut free_count = 0;
+            for (index, bit) in (*self.free8.get()).into_iter().enumerate() {
+                if bit == false {
+                    free_count += 1;
+                } else {
+                    free_count = 0;
+                }
+                if free_count >= size / 8 {
+                    let start_chunk = index + 1 - free_count;
+                    let end_chunk = index;
+                    (*self.free8.get()).set_range(start_chunk, end_chunk, true);
+                    return self.data.get().cast::<u8>().add(start_chunk * 8);
+                }
+            }
+        } else if align == 64 {
+            let mut free_count = 0;
+            for (index, bit) in (*self.free64.get()).into_iter().enumerate() {
+                if bit == false {
+                    free_count += 1;
+                } else {
+                    free_count = 0;
+                }
+                if free_count >= size / 64 {
+                    let start_chunk = index + 1 - free_count;
+                    let end_chunk = index;
+                    (*self.free64.get()).set_range(start_chunk, end_chunk, true);
+                    return self.data.get().cast::<u8>().add(start_chunk * 64);
+                }
+            }
+        } else if align == 512 {
+            let mut free_count = 0;
+            for (index, bit) in (*self.free512.get()).into_iter().enumerate() {
+                if bit == false {
+                    free_count += 1;
+                } else {
+                    free_count = 0;
+                }
+                if free_count >= size / 512 {
+                    let start_chunk = index + 1 - free_count;
+                    let end_chunk = index;
+                    (*self.free512.get()).set_range(start_chunk, end_chunk, true);
+                    return self.data.get().cast::<u8>().add(start_chunk * 512);
+                }
+            }
+        } else if align == 4096 {
+            let mut free_count = 0;
+            for (index, bit) in (*self.free4096.get()).into_iter().enumerate() {
+                if bit == false {
+                    free_count += 1;
+                } else {
+                    free_count = 0;
+                }
+                if free_count >= size / 4096 {
+                    let start_chunk = index + 1 - free_count;
+                    let end_chunk = index;
+                    (*self.free4096.get()).set_range(start_chunk, end_chunk, true);
+                    return self.data.get().cast::<u8>().add(start_chunk * 4096);
+                }
+            }
+        } else {
+            return null_mut();
+        };
+        null_mut()
     }
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         let size = round_to_bucket(layout.size());
         let align = round_to_bucket(layout.align());
-        todo!()
+        // todo!()
     }
 }
 
-#[cfg(not(test))]
+// #[cfg(not(test))]
 #[global_allocator]
 static ALLOCATOR: KernelAllocator = KernelAllocator {
     data: UnsafeCell::new([0; HEAP_SIZE]),
-    free8: bit_array_new!(HEAP_SIZE / 8),
-    free64: bit_array_new!(HEAP_SIZE / 64),
-    free512: bit_array_new!(HEAP_SIZE / 512),
-    free4096: bit_array_new!(HEAP_SIZE / 4096),
+    free8: UnsafeCell::new(bit_array_new!(HEAP_SIZE / 8)),
+    free64: UnsafeCell::new(bit_array_new!(HEAP_SIZE / 64)),
+    free512: UnsafeCell::new(bit_array_new!(HEAP_SIZE / 512)),
+    free4096: UnsafeCell::new(bit_array_new!(HEAP_SIZE / 4096)),
 };
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     use super::*;
 
     #[test]
@@ -136,5 +211,29 @@ mod tests {
         assert_eq!(false, bit_array.get(100).unwrap());
         bit_array.set(100, true);
         assert_eq!(true, bit_array.get(100).unwrap());
+
+        let bit_array = bit_array_new!(65);
+        assert_eq!(false, bit_array.get(65).unwrap());
+    }
+
+    #[test]
+    fn alloc() {
+        let allocator: KernelAllocator = KernelAllocator {
+            data: UnsafeCell::new([0; HEAP_SIZE]),
+            free8: UnsafeCell::new(bit_array_new!(HEAP_SIZE / 8)),
+            free64: UnsafeCell::new(bit_array_new!(HEAP_SIZE / 64)),
+            free512: UnsafeCell::new(bit_array_new!(HEAP_SIZE / 512)),
+            free4096: UnsafeCell::new(bit_array_new!(HEAP_SIZE / 4096)),
+        };
+
+        let layout = Layout::from_size_align(64, 8).unwrap();
+        unsafe {
+            let ptr = allocator.alloc(layout);
+            *ptr = 8;
+        }
+
+        let mut vec = vec![1, 2, 3];
+
+        let i = 0;
     }
 }

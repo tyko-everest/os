@@ -16,4 +16,4 @@ $(BUILD_DIR)/kernel8.img: $(BUILD_DIR)/os
 $(BUILD_DIR)/os:
 	cargo build --target=aarch64-unknown-none
 
-.PHONY: run debug
+.PHONY: run debug $(BUILD_DIR)/os

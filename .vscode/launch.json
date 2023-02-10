@@ -21,7 +21,7 @@
             "name": "Debug OS",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/kernel.elf",
+            "program": "${workspaceFolder}/target/aarch64-unknown-none/debug/os",
             "miDebuggerServerAddress": "localhost:1234",
             "externalConsole": true,
             "cwd": "${workspaceRoot}",
