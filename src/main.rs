@@ -4,7 +4,7 @@
 extern crate alloc;
 use alloc::string::String;
 use core::ffi::c_void;
-use core::fmt;
+use core::fmt::Write;
 use core::panic::PanicInfo;
 mod kalloc;
 
@@ -29,22 +29,32 @@ fn print_str(string: &str) {
     }
 }
 
+macro_rules! print {
+    ($s:expr) => {
+        for c in $s.bytes() {
+            putc(c);
+        }
+    };
+    ($($args:tt)*) => {
+        let mut s = String::new();
+        write!(s, $($args)*).unwrap();
+        for c in s.bytes() {
+            putc(c);
+        }
+    };
+}
+
 #[no_mangle]
 pub extern "C" fn interrupt_handler() {
-    for c in b"Interrupt!\n" {
-        putc(*c);
-    }
+    print_str("Interrupt!\n");
 }
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(panic: &PanicInfo<'_>) -> ! {
-    print_str("PANICKING!\n");
-    print_str(panic.location().unwrap().file());
-    print_str("\n");
-    let mut msg = String::new();
-    fmt::write(&mut msg, *panic.message().unwrap()).unwrap();
-    print_str(&msg);
+    print!("PANICKING!\n");
+    print!("File: {}\n", panic.location().unwrap().file());
+    print!("Reason: {}\n", *panic.message().unwrap());
     loop {}
 }
 
@@ -53,11 +63,12 @@ fn panic(panic: &PanicInfo<'_>) -> ! {
 pub extern "C" fn main() {
     use alloc::vec;
 
-    print_str("Hello World!\n");
+    print!("Hello World!\n");
+
     let test = vec![1, 2, 3];
-    // let mut output = String::with_capacity(256);
-    let mut output = String::new();
-    fmt::write(&mut output, format_args!("{:?}\n", test)).unwrap();
-    print_str(&output);
-    print_str("Done\n");
+    print!("{:?}\n", test);
+
+    panic!("BOO");
+
+    print!("Done\n");
 }

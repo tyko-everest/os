@@ -132,51 +132,51 @@ unsafe impl GlobalAlloc for KernelAllocator {
                     return self.data.get().cast::<u8>().add(start_chunk * 8);
                 }
             }
-        } else if align == 64 {
-            let mut free_count = 0;
-            for (index, bit) in (*self.free64.get()).into_iter().enumerate() {
-                if bit == false {
-                    free_count += 1;
-                } else {
-                    free_count = 0;
-                }
-                if free_count >= size / 64 {
-                    let start_chunk = index + 1 - free_count;
-                    let end_chunk = index;
-                    (*self.free64.get()).set_range(start_chunk, end_chunk, true);
-                    return self.data.get().cast::<u8>().add(start_chunk * 64);
-                }
-            }
-        } else if align == 512 {
-            let mut free_count = 0;
-            for (index, bit) in (*self.free512.get()).into_iter().enumerate() {
-                if bit == false {
-                    free_count += 1;
-                } else {
-                    free_count = 0;
-                }
-                if free_count >= size / 512 {
-                    let start_chunk = index + 1 - free_count;
-                    let end_chunk = index;
-                    (*self.free512.get()).set_range(start_chunk, end_chunk, true);
-                    return self.data.get().cast::<u8>().add(start_chunk * 512);
-                }
-            }
-        } else if align == 4096 {
-            let mut free_count = 0;
-            for (index, bit) in (*self.free4096.get()).into_iter().enumerate() {
-                if bit == false {
-                    free_count += 1;
-                } else {
-                    free_count = 0;
-                }
-                if free_count >= size / 4096 {
-                    let start_chunk = index + 1 - free_count;
-                    let end_chunk = index;
-                    (*self.free4096.get()).set_range(start_chunk, end_chunk, true);
-                    return self.data.get().cast::<u8>().add(start_chunk * 4096);
-                }
-            }
+        // } else if align == 64 {
+        //     let mut free_count = 0;
+        //     for (index, bit) in (*self.free64.get()).into_iter().enumerate() {
+        //         if bit == false {
+        //             free_count += 1;
+        //         } else {
+        //             free_count = 0;
+        //         }
+        //         if free_count >= size / 64 {
+        //             let start_chunk = index + 1 - free_count;
+        //             let end_chunk = index;
+        //             (*self.free64.get()).set_range(start_chunk, end_chunk, true);
+        //             return self.data.get().cast::<u8>().add(start_chunk * 64);
+        //         }
+        //     }
+        // } else if align == 512 {
+        //     let mut free_count = 0;
+        //     for (index, bit) in (*self.free512.get()).into_iter().enumerate() {
+        //         if bit == false {
+        //             free_count += 1;
+        //         } else {
+        //             free_count = 0;
+        //         }
+        //         if free_count >= size / 512 {
+        //             let start_chunk = index + 1 - free_count;
+        //             let end_chunk = index;
+        //             (*self.free512.get()).set_range(start_chunk, end_chunk, true);
+        //             return self.data.get().cast::<u8>().add(start_chunk * 512);
+        //         }
+        //     }
+        // } else if align == 4096 {
+        //     let mut free_count = 0;
+        //     for (index, bit) in (*self.free4096.get()).into_iter().enumerate() {
+        //         if bit == false {
+        //             free_count += 1;
+        //         } else {
+        //             free_count = 0;
+        //         }
+        //         if free_count >= size / 4096 {
+        //             let start_chunk = index + 1 - free_count;
+        //             let end_chunk = index;
+        //             (*self.free4096.get()).set_range(start_chunk, end_chunk, true);
+        //             return self.data.get().cast::<u8>().add(start_chunk * 4096);
+        //         }
+        //     }
         } else {
             return null_mut();
         };
